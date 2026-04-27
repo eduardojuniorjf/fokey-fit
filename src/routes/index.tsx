@@ -27,8 +27,8 @@ function Index() {
     }
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url")
-      .eq("id", user.id)
+      .select("id, display_name, avatar_url")
+      .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) toast.error(error.message);
