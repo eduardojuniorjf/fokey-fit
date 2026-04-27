@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
 
 interface Profile {
   id: string;
-  full_name: string | null;
+  display_name: string | null;
   avatar_url: string | null;
 }
 
