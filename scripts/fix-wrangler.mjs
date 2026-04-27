@@ -1,13 +1,27 @@
-// Post-build: overwrite the auto-generated dist/client/wrangler.json with a
-// minimal Cloudflare Pages-compatible config. The @cloudflare/vite-plugin
-// emits a Worker-style config that contains keys Pages rejects (e.g.
-// `triggers: {}`, `enable_containers`, `python_modules`, etc.).
-import { writeFileSync, existsSync } from "node:fs";
+// Post-build: prepare a Cloudflare Pages-compatible output. TanStack Start
+// emits the SSR worker in dist/server, while Pages serves dist/client. Without
+// an _worker.js in dist/client, Pages uploads only static assets and the app 404s.
+import { copyFileSync, cpSync, existsSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const target = resolve("dist/client/wrangler.json");
+const workerSource = resolve("dist/server/server.js");
+const workerTarget = resolve("dist/client/_worker.js");
+const serverAssetsSource = resolve("dist/server/assets");
+const clientAssetsTarget = resolve("dist/client/assets");
+
+if (!existsSync(workerSource)) {
+  console.error(`[fix-wrangler] Missing SSR worker at ${workerSource}`);
+  process.exit(1);
+}
+
+copyFileSync(workerSource, workerTarget);
+if (existsSync(serverAssetsSource)) {
+  cpSync(serverAssetsSource, clientAssetsTarget, { recursive: true });
+}
+
 const pagesConfig = {
-  name: "tanstack-start-app",
+  name: "fokey-fit",
   pages_build_output_dir: ".",
   compatibility_date: "2025-09-24",
   compatibility_flags: ["nodejs_compat"],
@@ -15,4 +29,5 @@ const pagesConfig = {
 
 writeFileSync(target, JSON.stringify(pagesConfig, null, 2));
 console.log(`[fix-wrangler] Wrote Pages-compatible config to ${target}`);
-if (!existsSync(target)) process.exit(1);
+console.log(`[fix-wrangler] Copied SSR worker to ${workerTarget}`);
+if (!existsSync(target) || !existsSync(workerTarget)) process.exit(1);
