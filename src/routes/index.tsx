@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
 
 interface Profile {
   id: string;
-  full_name: string | null;
+  display_name: string | null;
   avatar_url: string | null;
 }
 
@@ -27,8 +27,8 @@ function Index() {
     }
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url")
-      .eq("id", user.id)
+      .select("id, display_name, avatar_url")
+      .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) toast.error(error.message);
@@ -46,7 +46,7 @@ function Index() {
       ) : user ? (
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm">
-            Olá, <span className="font-medium">{profile?.full_name ?? user.email}</span>
+            Olá, <span className="font-medium">{profile?.display_name ?? user.email}</span>
           </p>
           <Button
             variant="outline"
