@@ -46,7 +46,7 @@ function Index() {
       ) : user ? (
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm">
-            Olá, <span className="font-medium">{profile?.full_name ?? user.email}</span>
+            Olá, <span className="font-medium">{profile?.display_name ?? user.email}</span>
           </p>
           <Button
             variant="outline"
