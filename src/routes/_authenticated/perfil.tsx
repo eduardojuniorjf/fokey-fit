@@ -58,9 +58,9 @@ function PerfilPage() {
   const initials = (displayName || user?.email || "?").slice(0, 2).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-6">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 lg:max-w-[900px] lg:px-8 lg:pt-8">
       <header className="mb-5">
-        <h1 className="text-2xl font-bold">Perfil</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">Perfil</h1>
       </header>
 
       <Card className="mb-4">

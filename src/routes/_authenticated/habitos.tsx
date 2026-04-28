@@ -110,10 +110,10 @@ function HabitosPage() {
   const total = habits.length;
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-6">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 lg:max-w-[1100px] lg:px-8 lg:pt-8">
       <header className="mb-5 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Hábitos</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl">Hábitos</h1>
           <p className="text-sm text-muted-foreground">
             {total > 0 ? `${completedCount} de ${total} hoje` : "Crie seu primeiro hábito"}
           </p>
@@ -177,7 +177,7 @@ function HabitosPage() {
           </CardContent>
         </Card>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
           {habits.map((h) => {
             const done = todayLogs.some((l) => l.habit_id === h.id);
             return (
