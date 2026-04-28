@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { MasonryDashboard } from "@/components/MasonryDashboard";
+import { ActivityChartCard } from "@/components/ActivityChartCard";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
@@ -102,7 +103,7 @@ function DashboardPage() {
         .from("daily_activity")
         .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
         .order("recorded_for", { ascending: true })
-        .limit(60),
+        .limit(365),
       supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
       supabase.from("habits").select("id, name, daily_target, unit").eq("active", true).order("created_at", { ascending: true }),
       supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
@@ -427,26 +428,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "activity-7d", node: (
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Atividade — últimos 7 dias</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-56 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={last7Activity} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                        <Bar dataKey="passos" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            )},
+            { id: "activity-7d", node: <ActivityChartCard activity={activity} /> },
             { id: "calories", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
