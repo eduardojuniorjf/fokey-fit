@@ -263,7 +263,7 @@ function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: st
   );
 }
 
-function QuickAction({ to, icon, label }: { to: "/atividade" | "/medidas" | "/habitos"; icon: React.ReactNode; label: string }) {
+function QuickAction({ to, icon, label }: { to: "/atividade" | "/medidas" | "/habitos" | "/historico"; icon: React.ReactNode; label: string }) {
   return (
     <Link
       to={to}
