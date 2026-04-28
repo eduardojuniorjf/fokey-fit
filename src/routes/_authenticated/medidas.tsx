@@ -513,3 +513,32 @@ function Pill({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function DateField({
+  date, onChange, minDate,
+}: { date: Date | undefined; onChange: (d: Date | undefined) => void; minDate?: Date }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? date.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : "Selecionar data"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={onChange}
+          disabled={minDate ? (d) => d <= minDate : undefined}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
