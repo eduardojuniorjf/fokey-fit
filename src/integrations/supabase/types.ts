@@ -14,6 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_measurements: {
+        Row: {
+          arm_cm: number | null
+          body_fat_pct: number | null
+          chest_cm: number | null
+          created_at: string
+          hip_cm: number | null
+          id: string
+          notes: string | null
+          recorded_at: string
+          thigh_cm: number | null
+          updated_at: string
+          user_id: string
+          waist_cm: number | null
+        }
+        Insert: {
+          arm_cm?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          hip_cm?: number | null
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          thigh_cm?: number | null
+          updated_at?: string
+          user_id: string
+          waist_cm?: number | null
+        }
+        Update: {
+          arm_cm?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          hip_cm?: number | null
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          thigh_cm?: number | null
+          updated_at?: string
+          user_id?: string
+          waist_cm?: number | null
+        }
+        Relationships: []
+      }
+      cardio_activities: {
+        Row: {
+          activity_type: string
+          avg_heart_rate: number | null
+          calories: number | null
+          created_at: string
+          distance_km: number | null
+          duration_minutes: number
+          external_id: string | null
+          id: string
+          notes: string | null
+          performed_at: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type?: string
+          avg_heart_rate?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_km?: number | null
+          duration_minutes: number
+          external_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_at?: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          avg_heart_rate?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_km?: number | null
+          duration_minutes?: number
+          external_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_at?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          created_at: string
+          habit_id: string
+          id: string
+          logged_for: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          habit_id: string
+          id?: string
+          logged_for?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          habit_id?: string
+          id?: string
+          logged_for?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string
+          daily_target: number
+          icon: string
+          id: string
+          name: string
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          daily_target?: number
+          icon?: string
+          id?: string
+          name: string
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          daily_target?: number
+          icon?: string
+          id?: string
+          name?: string
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -41,6 +214,39 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      weight_entries: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          recorded_at: string
+          source: string
+          updated_at: string
+          user_id: string
+          weight_kg: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          source?: string
+          updated_at?: string
+          user_id: string
+          weight_kg: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number
         }
         Relationships: []
       }
