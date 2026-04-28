@@ -114,7 +114,7 @@ function PerfilPage() {
     navigate({ to: "/auth" });
   };
 
-  const initials = (displayName || user?.email || "?").slice(0, 2).toUpperCase();
+  void displayName;
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-6 lg:max-w-[900px] lg:px-8 lg:pt-8">
