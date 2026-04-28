@@ -204,18 +204,18 @@ function HistoricoPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-md pb-6">
-      <header className="px-5 pb-6 pt-8 text-primary-foreground" style={{ background: "var(--gradient-hero)" }}>
-        <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm opacity-80 hover:opacity-100">
+    <div className="mx-auto w-full max-w-md pb-6 lg:max-w-[1280px]">
+      <header className="px-5 pb-6 pt-8 text-primary-foreground lg:rounded-2xl lg:mx-8 lg:mt-8 lg:px-8 lg:py-8" style={{ background: "var(--gradient-hero)" }}>
+        <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm opacity-80 hover:opacity-100 lg:hidden">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Link>
-        <h1 className="text-2xl font-bold">Histórico</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">Histórico</h1>
         <p className="mt-1 text-sm opacity-80">Veja sua evolução por período.</p>
       </header>
 
-      <div className="px-4 pt-4">
+      <div className="px-4 pt-4 lg:px-8">
         <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
             <TabsTrigger value="diario">Diário</TabsTrigger>
             <TabsTrigger value="semanal">Semanal</TabsTrigger>
             <TabsTrigger value="quinzenal">Quinzenal</TabsTrigger>
