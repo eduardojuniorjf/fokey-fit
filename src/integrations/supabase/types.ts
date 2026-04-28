@@ -219,6 +219,8 @@ export type Database = {
       }
       weight_entries: {
         Row: {
+          calories_burned: number | null
+          calories_consumed: number | null
           created_at: string
           id: string
           notes: string | null
@@ -226,9 +228,12 @@ export type Database = {
           source: string
           updated_at: string
           user_id: string
+          water_liters: number | null
           weight_kg: number
         }
         Insert: {
+          calories_burned?: number | null
+          calories_consumed?: number | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -236,9 +241,12 @@ export type Database = {
           source?: string
           updated_at?: string
           user_id: string
+          water_liters?: number | null
           weight_kg: number
         }
         Update: {
+          calories_burned?: number | null
+          calories_consumed?: number | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -246,7 +254,50 @@ export type Database = {
           source?: string
           updated_at?: string
           user_id?: string
+          water_liters?: number | null
           weight_kg?: number
+        }
+        Relationships: []
+      }
+      weight_goals: {
+        Row: {
+          active: boolean
+          created_at: string
+          height_cm: number
+          id: string
+          notes: string | null
+          start_date: string
+          start_weight_kg: number
+          target_date: string
+          target_weight_kg: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          height_cm: number
+          id?: string
+          notes?: string | null
+          start_date?: string
+          start_weight_kg: number
+          target_date: string
+          target_weight_kg: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          height_cm?: number
+          id?: string
+          notes?: string | null
+          start_date?: string
+          start_weight_kg?: number
+          target_date?: string
+          target_weight_kg?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
