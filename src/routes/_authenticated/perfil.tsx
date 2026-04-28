@@ -58,9 +58,9 @@ function PerfilPage() {
   const initials = (displayName || user?.email || "?").slice(0, 2).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-6">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 lg:max-w-[900px] lg:px-8 lg:pt-8">
       <header className="mb-5">
-        <h1 className="text-2xl font-bold">Perfil</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">Perfil</h1>
       </header>
 
       <Card className="mb-4">
@@ -76,44 +76,46 @@ function PerfilPage() {
         </CardContent>
       </Card>
 
-      <Card className="mb-4">
-        <CardHeader><CardTitle className="text-base">Dados pessoais</CardTitle></CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-3">
-              <div className="h-10 animate-pulse rounded bg-muted" />
-              <div className="h-20 animate-pulse rounded bg-muted" />
-            </div>
-          ) : (
-            <form onSubmit={save} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="dn">Nome</Label>
-                <Input id="dn" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Dados pessoais</CardTitle></CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3">
+                <div className="h-10 animate-pulse rounded bg-muted" />
+                <div className="h-20 animate-pulse rounded bg-muted" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Input id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Conte um pouco sobre você" />
-              </div>
-              <Button type="submit" className="w-full" disabled={saving}>
-                {saving ? "Salvando..." : "Salvar"}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <form onSubmit={save} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dn">Nome</Label>
+                  <Input id="dn" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Input id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Conte um pouco sobre você" />
+                </div>
+                <Button type="submit" className="w-full" disabled={saving}>
+                  {saving ? "Salvando..." : "Salvar"}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Integrações</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Google Fit</p>
-              <p className="text-xs text-muted-foreground">Em breve</p>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Integrações</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Google Fit</p>
+                <p className="text-xs text-muted-foreground">Em breve</p>
+              </div>
+              <Button variant="outline" size="sm" disabled>Conectar</Button>
             </div>
-            <Button variant="outline" size="sm" disabled>Conectar</Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       <Button variant="outline" className="mt-6 w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
         onClick={handleSignOut}>

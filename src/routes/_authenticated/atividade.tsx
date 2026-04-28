@@ -252,10 +252,10 @@ function AtividadePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-6 pb-2">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 pb-2 lg:max-w-[1280px] lg:px-8 lg:pt-8">
       <header className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Atividade</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl">Atividade</h1>
           <p className="text-sm text-muted-foreground">Passos, cardio e energia</p>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setOpenGoals(true)}>
@@ -264,14 +264,14 @@ function AtividadePage() {
       </header>
 
       <Tabs defaultValue="hoje">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="hoje">Hoje</TabsTrigger>
           <TabsTrigger value="semana">Semana</TabsTrigger>
           <TabsTrigger value="cardio">Cardio</TabsTrigger>
         </TabsList>
 
         {/* HOJE */}
-        <TabsContent value="hoje" className="mt-4 space-y-4">
+        <TabsContent value="hoje" className="mt-4 space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {/* Anel central */}
           <Card className="border-0 shadow-md">
             <CardContent className="flex flex-col items-center py-6">
@@ -344,7 +344,7 @@ function AtividadePage() {
         </TabsContent>
 
         {/* SEMANA */}
-        <TabsContent value="semana" className="mt-4 space-y-4">
+        <TabsContent value="semana" className="mt-4 space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center justify-between">

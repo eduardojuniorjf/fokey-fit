@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Scale, Ruler, Trash2, Target, Flame, Droplet, TrendingDown, Pencil } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Plus, Scale, Ruler, Trash2, Target, Flame, Droplet, TrendingDown, Pencil, CalendarIcon } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/medidas")({
@@ -84,7 +87,12 @@ function MedidasPage() {
   const [gStartWeight, setGStartWeight] = useState("");
   const [gHeight, setGHeight] = useState("");
   const [gTarget, setGTarget] = useState("");
-  const [gMonths, setGMonths] = useState("3");
+  const [gStartDate, setGStartDate] = useState<Date | undefined>(new Date());
+  const [gTargetDate, setGTargetDate] = useState<Date | undefined>(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 3);
+    return d;
+  });
 
   const load = () => {
     if (!user) return;
@@ -108,17 +116,15 @@ function MedidasPage() {
       setGStartWeight(String(goal.start_weight_kg));
       setGHeight(String(goal.height_cm));
       setGTarget(String(goal.target_weight_kg));
-      const months = Math.max(
-        1,
-        Math.round(
-          (new Date(goal.target_date).getTime() - new Date(goal.start_date).getTime()) /
-            (1000 * 60 * 60 * 24 * 30),
-        ),
-      );
-      setGMonths(String(months));
+      setGStartDate(new Date(goal.start_date + "T00:00"));
+      setGTargetDate(new Date(goal.target_date + "T00:00"));
     } else if (openGoal && !goal) {
       const lastWeight = weights[0]?.weight_kg;
       if (lastWeight) setGStartWeight(String(lastWeight));
+      setGStartDate(new Date());
+      const t = new Date();
+      t.setMonth(t.getMonth() + 3);
+      setGTargetDate(t);
     }
   }, [openGoal, goal, weights]);
 
@@ -163,17 +169,26 @@ function MedidasPage() {
   const submitGoal = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!gStartDate || !gTargetDate) {
+      toast.error("Selecione as datas inicial e final.");
+      return;
+    }
+    if (gTargetDate <= gStartDate) {
+      toast.error("A data final deve ser posterior à inicial.");
+      return;
+    }
     setSubmitting(true);
-    const startDate = goal?.start_date ?? new Date().toISOString().slice(0, 10);
-    const target = new Date(startDate);
-    target.setMonth(target.getMonth() + Number(gMonths));
+    const toISO = (d: Date) => {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+    };
     const payload = {
       user_id: user.id,
-      start_date: startDate,
+      start_date: toISO(gStartDate),
       start_weight_kg: Number(gStartWeight),
       height_cm: Number(gHeight),
       target_weight_kg: Number(gTarget),
-      target_date: target.toISOString().slice(0, 10),
+      target_date: toISO(gTargetDate),
       active: true,
     };
     const { error } = goal
@@ -210,14 +225,14 @@ function MedidasPage() {
     : 0;
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-6">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 lg:max-w-[1200px] lg:px-8 lg:pt-8">
       <header className="mb-5">
-        <h1 className="text-2xl font-bold">Medidas & Meta</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">Medidas & Meta</h1>
         <p className="text-sm text-muted-foreground">Acompanhe peso, medidas e progresso</p>
       </header>
 
       <Tabs defaultValue="weight">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="goal"><Target className="mr-1.5 h-4 w-4" />Meta</TabsTrigger>
           <TabsTrigger value="weight"><Scale className="mr-1.5 h-4 w-4" />Peso</TabsTrigger>
           <TabsTrigger value="measure"><Ruler className="mr-1.5 h-4 w-4" />Medidas</TabsTrigger>
@@ -259,7 +274,7 @@ function MedidasPage() {
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground">IMC</p>
@@ -302,8 +317,20 @@ function MedidasPage() {
                   <Field id="sw" label="Peso inicial (kg)" value={gStartWeight} onChange={setGStartWeight} required />
                   <Field id="h" label="Altura (cm)" value={gHeight} onChange={setGHeight} required />
                   <Field id="tw" label="Peso alvo (kg)" value={gTarget} onChange={setGTarget} required />
-                  <Field id="mo" label="Em (meses)" value={gMonths} onChange={setGMonths} required />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Data inicial</Label>
+                    <DateField date={gStartDate} onChange={setGStartDate} />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-xs">Data final (objetivo)</Label>
+                    <DateField date={gTargetDate} onChange={setGTargetDate} minDate={gStartDate} />
+                  </div>
                 </div>
+                {gStartDate && gTargetDate && gTargetDate > gStartDate && (
+                  <p className="text-xs text-muted-foreground">
+                    Período: {Math.ceil((gTargetDate.getTime() - gStartDate.getTime()) / (1000 * 60 * 60 * 24))} dias
+                  </p>
+                )}
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting ? "Salvando..." : "Salvar meta"}
                 </Button>
@@ -364,7 +391,7 @@ function MedidasPage() {
             </CardContent>
           </Card>
 
-          <ul className="space-y-2">
+          <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
             {weights.map((w) => (
               <li key={w.id}>
                 <Card>
@@ -427,7 +454,7 @@ function MedidasPage() {
               </CardContent>
             </Card>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
               {measures.map((m) => (
                 <li key={m.id}>
                   <Card>
@@ -484,5 +511,34 @@ function Pill({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className="font-semibold text-foreground">{value}</p>
     </div>
+  );
+}
+
+function DateField({
+  date, onChange, minDate,
+}: { date: Date | undefined; onChange: (d: Date | undefined) => void; minDate?: Date }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? date.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : "Selecionar data"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={onChange}
+          disabled={minDate ? (d) => d <= minDate : undefined}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
