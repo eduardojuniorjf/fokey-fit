@@ -391,7 +391,7 @@ function MedidasPage() {
             </CardContent>
           </Card>
 
-          <ul className="space-y-2">
+          <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
             {weights.map((w) => (
               <li key={w.id}>
                 <Card>
@@ -454,7 +454,7 @@ function MedidasPage() {
               </CardContent>
             </Card>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
               {measures.map((m) => (
                 <li key={m.id}>
                   <Card>
