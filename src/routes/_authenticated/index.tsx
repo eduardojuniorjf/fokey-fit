@@ -272,31 +272,26 @@ function DashboardPage() {
         {calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) && <CalChart data={calChartData} />}
       </div>
 
-      {/* ===== DESKTOP MASONRY + DRAG-AND-DROP ===== */}
+      {/* ===== DESKTOP: KPIs FIXOS NO TOPO + MASONRY ===== */}
       <div className="hidden lg:mt-6 lg:block">
+        <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+            value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
+            sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
+          <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+            value={String(todayAct?.cardio_points ?? 0)}
+            sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
+          <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+            value={`${todayAct?.energy_kcal ?? 0} kcal`}
+            sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
+          <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+            value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
+            sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
+            accent={bmiCat?.tone} />
+        </div>
+
         <MasonryDashboard
           widgets={[
-            { id: "kpi-steps", node: (
-              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
-                value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
-            )},
-            { id: "kpi-cardio", node: (
-              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
-                value={String(todayAct?.cardio_points ?? 0)}
-                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
-            )},
-            { id: "kpi-energy", node: (
-              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
-                value={`${todayAct?.energy_kcal ?? 0} kcal`}
-                sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
-            )},
-            { id: "kpi-weight", node: (
-              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
-                value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
-                sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
-                accent={bmiCat?.tone} />
-            )},
             { id: "goal", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
