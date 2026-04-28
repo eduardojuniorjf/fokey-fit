@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedMedidasRouteImport } from './routes/_authenticated/medidas'
+import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedHabitosRouteImport } from './routes/_authenticated/habitos'
 import { Route as AuthenticatedAtividadeRouteImport } from './routes/_authenticated/atividade'
 
@@ -41,6 +42,11 @@ const AuthenticatedMedidasRoute = AuthenticatedMedidasRouteImport.update({
   path: '/medidas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedHabitosRoute = AuthenticatedHabitosRouteImport.update({
   id: '/habitos',
   path: '/habitos',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/atividade': typeof AuthenticatedAtividadeRoute
   '/habitos': typeof AuthenticatedHabitosRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
   '/medidas': typeof AuthenticatedMedidasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
 }
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/atividade': typeof AuthenticatedAtividadeRoute
   '/habitos': typeof AuthenticatedHabitosRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
   '/medidas': typeof AuthenticatedMedidasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/': typeof AuthenticatedIndexRoute
@@ -74,21 +82,37 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/atividade': typeof AuthenticatedAtividadeRoute
   '/_authenticated/habitos': typeof AuthenticatedHabitosRoute
+  '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/medidas': typeof AuthenticatedMedidasRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/atividade' | '/habitos' | '/medidas' | '/perfil'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/atividade'
+    | '/habitos'
+    | '/historico'
+    | '/medidas'
+    | '/perfil'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/atividade' | '/habitos' | '/medidas' | '/perfil' | '/'
+  to:
+    | '/auth'
+    | '/atividade'
+    | '/habitos'
+    | '/historico'
+    | '/medidas'
+    | '/perfil'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/atividade'
     | '/_authenticated/habitos'
+    | '/_authenticated/historico'
     | '/_authenticated/medidas'
     | '/_authenticated/perfil'
     | '/_authenticated/'
@@ -136,6 +160,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMedidasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/historico': {
+      id: '/_authenticated/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/habitos': {
       id: '/_authenticated/habitos'
       path: '/habitos'
@@ -156,6 +187,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAtividadeRoute: typeof AuthenticatedAtividadeRoute
   AuthenticatedHabitosRoute: typeof AuthenticatedHabitosRoute
+  AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMedidasRoute: typeof AuthenticatedMedidasRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -164,6 +196,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAtividadeRoute: AuthenticatedAtividadeRoute,
   AuthenticatedHabitosRoute: AuthenticatedHabitosRoute,
+  AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMedidasRoute: AuthenticatedMedidasRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
