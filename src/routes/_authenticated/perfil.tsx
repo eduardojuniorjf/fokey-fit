@@ -7,8 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, Activity, RefreshCw, Unplug } from "lucide-react";
 import { toast } from "sonner";
+import {
+  startGoogleFitOAuth,
+  getGoogleFitStatus,
+  disconnectGoogleFit,
+  syncGoogleFit,
+} from "@/server/google-fit.functions";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: PerfilPage,
@@ -22,6 +28,59 @@ function PerfilPage() {
   const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [gfStatus, setGfStatus] = useState<{ connected: boolean; lastSyncedAt: string | null } | null>(null);
+  const [gfBusy, setGfBusy] = useState(false);
+
+  const refreshGfStatus = async () => {
+    try {
+      const s = await getGoogleFitStatus();
+      setGfStatus(s);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (user) refreshGfStatus();
+  }, [user]);
+
+  const handleConnectGoogleFit = async () => {
+    setGfBusy(true);
+    try {
+      const { url } = await startGoogleFitOAuth();
+      window.location.href = url;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao iniciar conexão");
+      setGfBusy(false);
+    }
+  };
+
+  const handleSyncGoogleFit = async () => {
+    setGfBusy(true);
+    try {
+      const r = await syncGoogleFit();
+      toast.success(`Sincronizado! ${r.activityCount} dia(s) de atividade, ${r.weightCount} peso(s).`);
+      await refreshGfStatus();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao sincronizar");
+    } finally {
+      setGfBusy(false);
+    }
+  };
+
+  const handleDisconnectGoogleFit = async () => {
+    if (!confirm("Desconectar o Google Fit?")) return;
+    setGfBusy(true);
+    try {
+      await disconnectGoogleFit();
+      toast.success("Google Fit desconectado");
+      await refreshGfStatus();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao desconectar");
+    } finally {
+      setGfBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -55,7 +114,7 @@ function PerfilPage() {
     navigate({ to: "/auth" });
   };
 
-  const initials = (displayName || user?.email || "?").slice(0, 2).toUpperCase();
+  void displayName;
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-6 lg:max-w-[900px] lg:px-8 lg:pt-8">
@@ -105,14 +164,41 @@ function PerfilPage() {
 
         <Card>
           <CardHeader><CardTitle className="text-base">Integrações</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Google Fit</p>
-                <p className="text-xs text-muted-foreground">Em breve</p>
+          <CardContent className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-primary/15 p-2 text-primary">
+                  <Activity className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-medium">Google Fit</p>
+                  <p className="text-xs text-muted-foreground">
+                    {gfStatus?.connected
+                      ? gfStatus.lastSyncedAt
+                        ? `Sincronizado em ${new Date(gfStatus.lastSyncedAt).toLocaleString("pt-BR")}`
+                        : "Conectado — nunca sincronizado"
+                      : "Importe passos, calorias, pontos cardio e peso"}
+                  </p>
+                </div>
               </div>
-              <Button variant="outline" size="sm" disabled>Conectar</Button>
+              {!gfStatus?.connected ? (
+                <Button size="sm" onClick={handleConnectGoogleFit} disabled={gfBusy}>
+                  {gfBusy ? "..." : "Conectar"}
+                </Button>
+              ) : null}
             </div>
+            {gfStatus?.connected ? (
+              <div className="flex gap-2">
+                <Button size="sm" variant="default" className="flex-1" onClick={handleSyncGoogleFit} disabled={gfBusy}>
+                  <RefreshCw className={`mr-1.5 h-4 w-4 ${gfBusy ? "animate-spin" : ""}`} />
+                  Sincronizar
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDisconnectGoogleFit} disabled={gfBusy}>
+                  <Unplug className="mr-1.5 h-4 w-4" />
+                  Desconectar
+                </Button>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
