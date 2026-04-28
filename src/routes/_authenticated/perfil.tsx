@@ -7,8 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, Activity, RefreshCw, Unplug } from "lucide-react";
 import { toast } from "sonner";
+import {
+  startGoogleFitOAuth,
+  getGoogleFitStatus,
+  disconnectGoogleFit,
+  syncGoogleFit,
+} from "@/server/google-fit.functions";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: PerfilPage,
