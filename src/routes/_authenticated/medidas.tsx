@@ -317,8 +317,20 @@ function MedidasPage() {
                   <Field id="sw" label="Peso inicial (kg)" value={gStartWeight} onChange={setGStartWeight} required />
                   <Field id="h" label="Altura (cm)" value={gHeight} onChange={setGHeight} required />
                   <Field id="tw" label="Peso alvo (kg)" value={gTarget} onChange={setGTarget} required />
-                  <Field id="mo" label="Em (meses)" value={gMonths} onChange={setGMonths} required />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Data inicial</Label>
+                    <DateField date={gStartDate} onChange={setGStartDate} />
+                  </div>
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-xs">Data final (objetivo)</Label>
+                    <DateField date={gTargetDate} onChange={setGTargetDate} minDate={gStartDate} />
+                  </div>
                 </div>
+                {gStartDate && gTargetDate && gTargetDate > gStartDate && (
+                  <p className="text-xs text-muted-foreground">
+                    Período: {Math.ceil((gTargetDate.getTime() - gStartDate.getTime()) / (1000 * 60 * 60 * 24))} dias
+                  </p>
+                )}
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting ? "Salvando..." : "Salvar meta"}
                 </Button>
