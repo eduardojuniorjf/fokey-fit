@@ -102,7 +102,7 @@ function DashboardPage() {
         .from("daily_activity")
         .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
         .order("recorded_for", { ascending: true })
-        .limit(60),
+        .limit(365),
       supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
       supabase.from("habits").select("id, name, daily_target, unit").eq("active", true).order("created_at", { ascending: true }),
       supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
