@@ -20,6 +20,28 @@ if (existsSync(serverAssetsSource)) {
   cpSync(serverAssetsSource, clientAssetsTarget, { recursive: true });
 }
 
+// Tell Cloudflare Pages to bypass the Worker for static assets, favicons,
+// and other public files — otherwise the SSR worker tries to handle every
+// request (including /assets/*.js) and returns 404 for static files.
+const routesTarget = resolve("dist/client/_routes.json");
+const routesConfig = {
+  version: 1,
+  include: ["/*"],
+  exclude: [
+    "/assets/*",
+    "/favicon.ico",
+    "/favicon.svg",
+    "/robots.txt",
+    "/placeholder.svg",
+    "/_worker.js",
+    "/_routes.json",
+    "/wrangler.json",
+    "/.assetsignore",
+  ],
+};
+writeFileSync(routesTarget, JSON.stringify(routesConfig, null, 2));
+console.log(`[fix-wrangler] Wrote _routes.json to ${routesTarget}`);
+
 const pagesConfig = {
   name: "fokey-fit",
   pages_build_output_dir: ".",
