@@ -154,7 +154,7 @@ function SortableItem({
         {...attributes}
         {...listeners}
         aria-label="Reordenar card"
-        className="absolute right-2 top-2 z-10 flex h-7 w-7 cursor-grab items-center justify-center rounded-md bg-card/80 text-muted-foreground opacity-0 backdrop-blur transition hover:bg-muted hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
+        className="absolute left-2 top-2 z-10 flex h-7 w-7 cursor-grab items-center justify-center rounded-md bg-card/80 text-muted-foreground opacity-0 backdrop-blur transition hover:bg-muted hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
       >
         <GripVertical className="h-4 w-4" />
       </button>
