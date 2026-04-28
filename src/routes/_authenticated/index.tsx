@@ -173,10 +173,11 @@ function DashboardPage() {
         {/* Atalhos */}
         <div>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registrar agora</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <QuickAction to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso" />
             <QuickAction to="/atividade" icon={<Activity className="h-5 w-5" />} label="Atividade" />
             <QuickAction to="/habitos" icon={<ListChecks className="h-5 w-5" />} label="Hábitos" />
+            <QuickAction to="/historico" icon={<TrendingDown className="h-5 w-5" />} label="Histórico" />
           </div>
         </div>
 
