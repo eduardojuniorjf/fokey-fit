@@ -16,6 +16,7 @@ import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMedidasRouteImport } from './routes/_authenticated/medidas'
 import { Route as AuthenticatedHabitosRouteImport } from './routes/_authenticated/habitos'
 import { Route as AuthenticatedAtividadesRouteImport } from './routes/_authenticated/atividades'
+import { Route as AuthenticatedAtividadeRouteImport } from './routes/_authenticated/atividade'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -51,10 +52,16 @@ const AuthenticatedAtividadesRoute = AuthenticatedAtividadesRouteImport.update({
   path: '/atividades',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAtividadeRoute = AuthenticatedAtividadeRouteImport.update({
+  id: '/atividade',
+  path: '/atividade',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/atividade': typeof AuthenticatedAtividadeRoute
   '/atividades': typeof AuthenticatedAtividadesRoute
   '/habitos': typeof AuthenticatedHabitosRoute
   '/medidas': typeof AuthenticatedMedidasRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/atividade': typeof AuthenticatedAtividadeRoute
   '/atividades': typeof AuthenticatedAtividadesRoute
   '/habitos': typeof AuthenticatedHabitosRoute
   '/medidas': typeof AuthenticatedMedidasRoute
@@ -72,6 +80,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/atividade': typeof AuthenticatedAtividadeRoute
   '/_authenticated/atividades': typeof AuthenticatedAtividadesRoute
   '/_authenticated/habitos': typeof AuthenticatedHabitosRoute
   '/_authenticated/medidas': typeof AuthenticatedMedidasRoute
@@ -80,13 +89,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/atividades' | '/habitos' | '/medidas' | '/perfil'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/atividade'
+    | '/atividades'
+    | '/habitos'
+    | '/medidas'
+    | '/perfil'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/atividades' | '/habitos' | '/medidas' | '/perfil' | '/'
+  to:
+    | '/auth'
+    | '/atividade'
+    | '/atividades'
+    | '/habitos'
+    | '/medidas'
+    | '/perfil'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/atividade'
     | '/_authenticated/atividades'
     | '/_authenticated/habitos'
     | '/_authenticated/medidas'
@@ -150,10 +174,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAtividadesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/atividade': {
+      id: '/_authenticated/atividade'
+      path: '/atividade'
+      fullPath: '/atividade'
+      preLoaderRoute: typeof AuthenticatedAtividadeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAtividadeRoute: typeof AuthenticatedAtividadeRoute
   AuthenticatedAtividadesRoute: typeof AuthenticatedAtividadesRoute
   AuthenticatedHabitosRoute: typeof AuthenticatedHabitosRoute
   AuthenticatedMedidasRoute: typeof AuthenticatedMedidasRoute
@@ -162,6 +194,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAtividadeRoute: AuthenticatedAtividadeRoute,
   AuthenticatedAtividadesRoute: AuthenticatedAtividadesRoute,
   AuthenticatedHabitosRoute: AuthenticatedHabitosRoute,
   AuthenticatedMedidasRoute: AuthenticatedMedidasRoute,
