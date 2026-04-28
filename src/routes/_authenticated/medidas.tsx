@@ -225,14 +225,14 @@ function MedidasPage() {
     : 0;
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-6">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 lg:max-w-[1200px] lg:px-8 lg:pt-8">
       <header className="mb-5">
-        <h1 className="text-2xl font-bold">Medidas & Meta</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">Medidas & Meta</h1>
         <p className="text-sm text-muted-foreground">Acompanhe peso, medidas e progresso</p>
       </header>
 
       <Tabs defaultValue="weight">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="goal"><Target className="mr-1.5 h-4 w-4" />Meta</TabsTrigger>
           <TabsTrigger value="weight"><Scale className="mr-1.5 h-4 w-4" />Peso</TabsTrigger>
           <TabsTrigger value="measure"><Ruler className="mr-1.5 h-4 w-4" />Medidas</TabsTrigger>
