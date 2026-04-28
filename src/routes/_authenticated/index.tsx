@@ -175,7 +175,7 @@ function DashboardPage() {
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registrar agora</h2>
           <div className="grid grid-cols-3 gap-3">
             <QuickAction to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso" />
-            <QuickAction to="/atividades" icon={<Activity className="h-5 w-5" />} label="Cardio" />
+            <QuickAction to="/atividade" icon={<Activity className="h-5 w-5" />} label="Atividade" />
             <QuickAction to="/habitos" icon={<ListChecks className="h-5 w-5" />} label="Hábitos" />
           </div>
         </div>
@@ -262,7 +262,7 @@ function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: st
   );
 }
 
-function QuickAction({ to, icon, label }: { to: "/atividades" | "/medidas" | "/habitos"; icon: React.ReactNode; label: string }) {
+function QuickAction({ to, icon, label }: { to: "/atividade" | "/medidas" | "/habitos"; icon: React.ReactNode; label: string }) {
   return (
     <Link
       to={to}

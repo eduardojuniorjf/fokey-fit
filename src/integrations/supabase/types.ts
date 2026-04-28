@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_goals: {
+        Row: {
+          created_at: string
+          daily_active_minutes: number
+          daily_cardio_points: number
+          daily_energy_kcal: number
+          daily_steps: number
+          id: string
+          updated_at: string
+          user_id: string
+          weekly_cardio_points: number
+          weekly_steps: number
+        }
+        Insert: {
+          created_at?: string
+          daily_active_minutes?: number
+          daily_cardio_points?: number
+          daily_energy_kcal?: number
+          daily_steps?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+          weekly_cardio_points?: number
+          weekly_steps?: number
+        }
+        Update: {
+          created_at?: string
+          daily_active_minutes?: number
+          daily_cardio_points?: number
+          daily_energy_kcal?: number
+          daily_steps?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weekly_cardio_points?: number
+          weekly_steps?: number
+        }
+        Relationships: []
+      }
       body_measurements: {
         Row: {
           arm_cm: number | null
@@ -102,6 +141,51 @@ export type Database = {
           notes?: string | null
           performed_at?: string
           source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_activity: {
+        Row: {
+          active_minutes: number
+          cardio_points: number
+          created_at: string
+          distance_km: number
+          energy_kcal: number
+          id: string
+          notes: string | null
+          recorded_for: string
+          source: string
+          steps: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_minutes?: number
+          cardio_points?: number
+          created_at?: string
+          distance_km?: number
+          energy_kcal?: number
+          id?: string
+          notes?: string | null
+          recorded_for?: string
+          source?: string
+          steps?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_minutes?: number
+          cardio_points?: number
+          created_at?: string
+          distance_km?: number
+          energy_kcal?: number
+          id?: string
+          notes?: string | null
+          recorded_for?: string
+          source?: string
+          steps?: number
           updated_at?: string
           user_id?: string
         }
