@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Scale, Ruler, Trash2, Target, Flame, Droplet, TrendingDown, Pencil } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Plus, Scale, Ruler, Trash2, Target, Flame, Droplet, TrendingDown, Pencil, CalendarIcon } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/medidas")({
@@ -84,7 +87,12 @@ function MedidasPage() {
   const [gStartWeight, setGStartWeight] = useState("");
   const [gHeight, setGHeight] = useState("");
   const [gTarget, setGTarget] = useState("");
-  const [gMonths, setGMonths] = useState("3");
+  const [gStartDate, setGStartDate] = useState<Date | undefined>(new Date());
+  const [gTargetDate, setGTargetDate] = useState<Date | undefined>(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 3);
+    return d;
+  });
 
   const load = () => {
     if (!user) return;
@@ -108,17 +116,15 @@ function MedidasPage() {
       setGStartWeight(String(goal.start_weight_kg));
       setGHeight(String(goal.height_cm));
       setGTarget(String(goal.target_weight_kg));
-      const months = Math.max(
-        1,
-        Math.round(
-          (new Date(goal.target_date).getTime() - new Date(goal.start_date).getTime()) /
-            (1000 * 60 * 60 * 24 * 30),
-        ),
-      );
-      setGMonths(String(months));
+      setGStartDate(new Date(goal.start_date + "T00:00"));
+      setGTargetDate(new Date(goal.target_date + "T00:00"));
     } else if (openGoal && !goal) {
       const lastWeight = weights[0]?.weight_kg;
       if (lastWeight) setGStartWeight(String(lastWeight));
+      setGStartDate(new Date());
+      const t = new Date();
+      t.setMonth(t.getMonth() + 3);
+      setGTargetDate(t);
     }
   }, [openGoal, goal, weights]);
 
@@ -163,17 +169,26 @@ function MedidasPage() {
   const submitGoal = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!gStartDate || !gTargetDate) {
+      toast.error("Selecione as datas inicial e final.");
+      return;
+    }
+    if (gTargetDate <= gStartDate) {
+      toast.error("A data final deve ser posterior à inicial.");
+      return;
+    }
     setSubmitting(true);
-    const startDate = goal?.start_date ?? new Date().toISOString().slice(0, 10);
-    const target = new Date(startDate);
-    target.setMonth(target.getMonth() + Number(gMonths));
+    const toISO = (d: Date) => {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+    };
     const payload = {
       user_id: user.id,
-      start_date: startDate,
+      start_date: toISO(gStartDate),
       start_weight_kg: Number(gStartWeight),
       height_cm: Number(gHeight),
       target_weight_kg: Number(gTarget),
-      target_date: target.toISOString().slice(0, 10),
+      target_date: toISO(gTargetDate),
       active: true,
     };
     const { error } = goal
