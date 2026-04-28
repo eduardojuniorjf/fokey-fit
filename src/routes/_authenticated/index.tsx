@@ -98,7 +98,7 @@ function DashboardPage() {
         .limit(180),
       supabase.from("weight_goals").select("*").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabase
-        .from("daily_activities")
+        .from("daily_activity")
         .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
         .order("recorded_for", { ascending: true })
         .limit(60),
