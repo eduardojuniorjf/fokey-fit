@@ -274,7 +274,7 @@ function MedidasPage() {
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground">IMC</p>
