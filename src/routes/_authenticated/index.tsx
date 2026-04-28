@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { MasonryDashboard } from "@/components/MasonryDashboard";
 import { ActivityChartCard } from "@/components/ActivityChartCard";
+import { getDailyQuote } from "@/lib/dailyQuote";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
@@ -239,7 +240,7 @@ function DashboardPage() {
             <h1 className="mt-1 text-2xl font-bold lg:text-3xl">
               {displayName ?? user?.email?.split("@")[0] ?? "atleta"} 💪
             </h1>
-            <p className="mt-2 text-sm opacity-75">Vamos para mais um dia de progresso.</p>
+            <p className="mt-2 text-sm italic opacity-75">"{getDailyQuote()}"</p>
           </div>
           {/* Streak destaque desktop */}
           <div className="mt-4 hidden items-center gap-3 rounded-xl bg-white/10 px-4 py-3 backdrop-blur lg:flex">
