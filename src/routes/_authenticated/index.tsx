@@ -13,6 +13,7 @@ import {
   AreaChart, Area, BarChart, Bar,
 } from "recharts";
 import { toast } from "sonner";
+import { MasonryDashboard } from "@/components/MasonryDashboard";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
