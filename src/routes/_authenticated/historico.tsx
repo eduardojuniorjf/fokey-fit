@@ -232,6 +232,7 @@ function HistoricoPage() {
               <>
                 <SummaryCards weightChart={weightChart} calChart={calChart} actChart={actChart} />
 
+                <div className="grid gap-4 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-base">
@@ -307,6 +308,7 @@ function HistoricoPage() {
                     )}
                   </CardContent>
                 </Card>
+                </div>
 
                 <DetailTable
                   period={period}
@@ -352,7 +354,7 @@ function SummaryCards({
   const totalCardio = actChart.reduce((a, c) => a + c.cardio, 0);
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
       <Mini icon={<Scale className="h-4 w-4" />} label="Peso médio" value={totalAvg ? `${totalAvg.toFixed(1)} kg` : "—"} />
       <Mini
         icon={variation != null && variation < 0 ? <ArrowDown className="h-4 w-4" /> : variation != null && variation > 0 ? <ArrowUp className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
