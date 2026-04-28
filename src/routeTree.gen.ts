@@ -17,6 +17,7 @@ import { Route as AuthenticatedMedidasRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedHabitosRouteImport } from './routes/_authenticated/habitos'
 import { Route as AuthenticatedAtividadeRouteImport } from './routes/_authenticated/atividade'
+import { Route as ApiPublicGoogleFitCallbackRouteImport } from './routes/api/public/google-fit-callback'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -57,6 +58,12 @@ const AuthenticatedAtividadeRoute = AuthenticatedAtividadeRouteImport.update({
   path: '/atividade',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicGoogleFitCallbackRoute =
+  ApiPublicGoogleFitCallbackRouteImport.update({
+    id: '/api/public/google-fit-callback',
+    path: '/api/public/google-fit-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/historico': typeof AuthenticatedHistoricoRoute
   '/medidas': typeof AuthenticatedMedidasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
+  '/api/public/google-fit-callback': typeof ApiPublicGoogleFitCallbackRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/medidas': typeof AuthenticatedMedidasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/google-fit-callback': typeof ApiPublicGoogleFitCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/medidas': typeof AuthenticatedMedidasRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/google-fit-callback': typeof ApiPublicGoogleFitCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/medidas'
     | '/perfil'
+    | '/api/public/google-fit-callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/medidas'
     | '/perfil'
     | '/'
+    | '/api/public/google-fit-callback'
   id:
     | '__root__'
     | '/_authenticated'
@@ -116,11 +128,13 @@ export interface FileRouteTypes {
     | '/_authenticated/medidas'
     | '/_authenticated/perfil'
     | '/_authenticated/'
+    | '/api/public/google-fit-callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicGoogleFitCallbackRoute: typeof ApiPublicGoogleFitCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -181,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAtividadeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/google-fit-callback': {
+      id: '/api/public/google-fit-callback'
+      path: '/api/public/google-fit-callback'
+      fullPath: '/api/public/google-fit-callback'
+      preLoaderRoute: typeof ApiPublicGoogleFitCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -209,6 +230,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicGoogleFitCallbackRoute: ApiPublicGoogleFitCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
