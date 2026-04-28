@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedMedidasRouteImport } from './routes/_authenticated/medidas'
 import { Route as AuthenticatedAtividadesRouteImport } from './routes/_authenticated/atividades'
 
 const AuthRoute = AuthRouteImport.update({
@@ -28,6 +29,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMedidasRoute = AuthenticatedMedidasRouteImport.update({
+  id: '/medidas',
+  path: '/medidas',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAtividadesRoute = AuthenticatedAtividadesRouteImport.update({
   id: '/atividades',
   path: '/atividades',
@@ -38,10 +44,12 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/atividades': typeof AuthenticatedAtividadesRoute
+  '/medidas': typeof AuthenticatedMedidasRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/atividades': typeof AuthenticatedAtividadesRoute
+  '/medidas': typeof AuthenticatedMedidasRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -49,18 +57,20 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/atividades': typeof AuthenticatedAtividadesRoute
+  '/_authenticated/medidas': typeof AuthenticatedMedidasRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/atividades'
+  fullPaths: '/' | '/auth' | '/atividades' | '/medidas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/atividades' | '/'
+  to: '/auth' | '/atividades' | '/medidas' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/atividades'
+    | '/_authenticated/medidas'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/medidas': {
+      id: '/_authenticated/medidas'
+      path: '/medidas'
+      fullPath: '/medidas'
+      preLoaderRoute: typeof AuthenticatedMedidasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/atividades': {
       id: '/_authenticated/atividades'
       path: '/atividades'
@@ -104,11 +121,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAtividadesRoute: typeof AuthenticatedAtividadesRoute
+  AuthenticatedMedidasRoute: typeof AuthenticatedMedidasRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAtividadesRoute: AuthenticatedAtividadesRoute,
+  AuthenticatedMedidasRoute: AuthenticatedMedidasRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
