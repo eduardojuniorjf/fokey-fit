@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BottomNav } from "@/components/BottomNav";
+import { AppSidebar } from "@/components/AppSidebar";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -26,11 +27,14 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <main className="flex-1 pb-20">
-        <Outlet />
-      </main>
-      <BottomNav />
+    <div className="min-h-screen bg-background">
+      <AppSidebar />
+      <div className="flex min-h-screen flex-col lg:pl-64">
+        <main className="flex-1 pb-20 lg:pb-8">
+          <Outlet />
+        </main>
+        <BottomNav />
+      </div>
     </div>
   );
 }
