@@ -269,235 +269,228 @@ function DashboardPage() {
         {calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) && <CalChart data={calChartData} />}
       </div>
 
-      {/* ===== DESKTOP GRID ===== */}
-      <div className="hidden lg:mt-6 lg:grid lg:grid-cols-12 lg:gap-5">
-        {/* Linha 1 — KPIs */}
-        <KpiCard
-          className="lg:col-span-3"
-          icon={<Footprints className="h-5 w-5" />}
-          label="Passos hoje"
-          value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-          sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`}
-          progress={stepsPct}
-        />
-        <KpiCard
-          className="lg:col-span-3"
-          icon={<Heart className="h-5 w-5" />}
-          label="Pontos cardio"
-          value={String(todayAct?.cardio_points ?? 0)}
-          sub={`Meta ${actGoals.daily_cardio_points}`}
-          progress={cardioPct}
-        />
-        <KpiCard
-          className="lg:col-span-3"
-          icon={<Flame className="h-5 w-5" />}
-          label="Energia hoje"
-          value={`${todayAct?.energy_kcal ?? 0} kcal`}
-          sub={`${todayAct?.active_minutes ?? 0} min ativos`}
-        />
-        <KpiCard
-          className="lg:col-span-3"
-          icon={<Scale className="h-5 w-5" />}
-          label="Peso atual"
-          value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
-          sub={
-            bmi != null && bmiCat
-              ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}`
-              : "Defina altura na meta"
-          }
-          accent={bmiCat?.tone}
-        />
-
-        {/* Linha 2 — Meta + Insight + Hábitos */}
-        <Card className="lg:col-span-5 overflow-hidden border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Target className="h-4 w-4 text-primary" /> Meta de peso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {goal ? (
-              <>
-                <div className="mb-3 flex items-baseline justify-between">
-                  <p className="text-4xl font-bold text-primary">{progressPct.toFixed(0)}%</p>
-                  <div className="text-right text-sm text-muted-foreground">
-                    <p>{currentWeight?.toFixed(1) ?? "—"} → {Number(goal.target_weight_kg).toFixed(1)} kg</p>
-                    <p className="text-xs">{daysLeft} dias restantes</p>
+      {/* ===== DESKTOP MASONRY + DRAG-AND-DROP ===== */}
+      <div className="hidden lg:mt-6 lg:block">
+        <MasonryDashboard
+          widgets={[
+            { id: "kpi-steps", node: (
+              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+                value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
+            )},
+            { id: "kpi-cardio", node: (
+              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+                value={String(todayAct?.cardio_points ?? 0)}
+                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
+            )},
+            { id: "kpi-energy", node: (
+              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+                value={`${todayAct?.energy_kcal ?? 0} kcal`}
+                sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
+            )},
+            { id: "kpi-weight", node: (
+              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+                value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
+                sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
+                accent={bmiCat?.tone} />
+            )},
+            { id: "goal", node: (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Target className="h-4 w-4 text-primary" /> Meta de peso
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {goal ? (
+                    <>
+                      <div className="mb-3 flex items-baseline justify-between">
+                        <p className="text-4xl font-bold text-primary">{progressPct.toFixed(0)}%</p>
+                        <div className="text-right text-sm text-muted-foreground">
+                          <p>{currentWeight?.toFixed(1) ?? "—"} → {Number(goal.target_weight_kg).toFixed(1)} kg</p>
+                          <p className="text-xs">{daysLeft} dias restantes</p>
+                        </div>
+                      </div>
+                      <Progress value={progressPct} className="h-3" />
+                      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                        <MiniStat label="Início" value={`${Number(goal.start_weight_kg).toFixed(1)} kg`} />
+                        <MiniStat label="Perdido" value={`${Math.max(0, lostSoFar).toFixed(1)} kg`} accent="good" />
+                        <MiniStat label="Faltam" value={`${Math.max(0, totalToLose - lostSoFar).toFixed(1)} kg`} />
+                      </div>
+                    </>
+                  ) : (
+                    <Link to="/medidas" className="block rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary">
+                      <Target className="mx-auto h-8 w-8 text-primary" />
+                      <p className="mt-2 text-sm font-semibold">Defina sua meta de peso</p>
+                      <p className="text-xs text-muted-foreground">Acompanhe seu progresso</p>
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
+            )},
+            { id: "insight", node: (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm leading-relaxed">{insight}</p>
+                  <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
+                    <Award className="h-4 w-4 text-primary" />
+                    <p className="text-xs">
+                      <span className="font-semibold text-primary">{streak}</span>{" "}
+                      {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
+                    </p>
                   </div>
-                </div>
-                <Progress value={progressPct} className="h-3" />
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <MiniStat label="Início" value={`${Number(goal.start_weight_kg).toFixed(1)} kg`} />
-                  <MiniStat label="Perdido" value={`${Math.max(0, lostSoFar).toFixed(1)} kg`} accent="good" />
-                  <MiniStat label="Faltam" value={`${Math.max(0, totalToLose - lostSoFar).toFixed(1)} kg`} />
-                </div>
-              </>
-            ) : (
-              <Link to="/medidas" className="block rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary">
-                <Target className="mx-auto h-8 w-8 text-primary" />
-                <p className="mt-2 text-sm font-semibold">Defina sua meta de peso</p>
-                <p className="text-xs text-muted-foreground">Acompanhe seu progresso</p>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-3 border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm leading-relaxed">{insight}</p>
-            <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
-              <Award className="h-4 w-4 text-primary" />
-              <p className="text-xs">
-                <span className="font-semibold text-primary">{streak}</span>{" "}
-                {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-4 border-0 shadow-md">
-          <CardHeader className="pb-2 flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
-            </CardTitle>
-            <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
-          </CardHeader>
-          <CardContent>
-            {habits.length === 0 ? (
-              <Link to="/habitos" className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary">
-                Crie seus primeiros hábitos
-              </Link>
-            ) : (
-              <ul className="space-y-2.5 max-h-[200px] overflow-y-auto">
-                {habitProgress.map(({ habit, total, pct }) => (
-                  <li key={habit.id}>
-                    <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className="font-medium truncate">{habit.name}</span>
-                      <span className="text-muted-foreground tabular-nums">
-                        {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
-                      </span>
+                </CardContent>
+              </Card>
+            )},
+            { id: "habits", node: (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2 flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
+                  </CardTitle>
+                  <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
+                </CardHeader>
+                <CardContent>
+                  {habits.length === 0 ? (
+                    <Link to="/habitos" className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary">
+                      Crie seus primeiros hábitos
+                    </Link>
+                  ) : (
+                    <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
+                      {habitProgress.map(({ habit, total, pct }) => (
+                        <li key={habit.id}>
+                          <div className="mb-1 flex items-center justify-between text-xs">
+                            <span className="font-medium truncate">{habit.name}</span>
+                            <span className="text-muted-foreground tabular-nums">
+                              {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
+                            </span>
+                          </div>
+                          <Progress value={pct} className="h-1.5" />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            )},
+            { id: "weight-chart", node: (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Evolução do peso</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="h-64 animate-pulse rounded-md bg-muted" />
+                  ) : weightChartData.length < 2 ? (
+                    <p className="py-16 text-center text-sm text-muted-foreground">
+                      Registre seu peso ao menos 2 vezes para ver a evolução.
+                    </p>
+                  ) : (
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={weightChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} domain={["dataMin - 1", "dataMax + 1"]} />
+                          <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                          <Line type="monotone" dataKey="peso" stroke="var(--primary)" strokeWidth={2.5} dot={{ fill: "var(--primary)", r: 3 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
                     </div>
-                    <Progress value={pct} className="h-1.5" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Linha 3 — Gráfico peso (largo) + Painel mês */}
-        <Card className="lg:col-span-8 border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Evolução do peso</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="h-64 animate-pulse rounded-md bg-muted" />
-            ) : weightChartData.length < 2 ? (
-              <p className="py-16 text-center text-sm text-muted-foreground">
-                Registre seu peso ao menos 2 vezes para ver a evolução.
-              </p>
-            ) : (
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={weightChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} domain={["dataMin - 1", "dataMax + 1"]} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                    <Line type="monotone" dataKey="peso" stroke="var(--primary)" strokeWidth={2.5} dot={{ fill: "var(--primary)", r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-4 border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">
-              {MONTHS[now.getMonth()]} / {now.getFullYear()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3">
-            <Stat icon={<ArrowUp className="h-4 w-4" />} label="Máximo" value={monthMax ? `${monthMax.toFixed(1)} kg` : "—"} />
-            <Stat icon={<ArrowDown className="h-4 w-4" />} label="Mínimo" value={monthMin ? `${monthMin.toFixed(1)} kg` : "—"} />
-            <Stat icon={<Minus className="h-4 w-4" />} label="Média" value={monthAvg ? `${monthAvg.toFixed(1)} kg` : "—"} />
-            <Stat
-              icon={monthLossPct != null && monthLossPct >= 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-              label="% mês"
-              value={monthLossPct != null ? `${monthLossPct >= 0 ? "-" : "+"}${Math.abs(monthLossPct).toFixed(1)}%` : "—"}
-              accent={monthLossPct != null && monthLossPct > 0 ? "good" : monthLossPct != null && monthLossPct < 0 ? "bad" : "neutral"}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Linha 4 — Atividade 7d + Calorias */}
-        <Card className="lg:col-span-6 border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Atividade — últimos 7 dias</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={last7Activity} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                  <Bar dataKey="passos" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-6 border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Calorias — últimos 30 dias</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) ? (
-              <>
-                <div className="h-56 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={calChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="cQd" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="cCd" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                      <Area type="monotone" dataKey="queimadas" stroke="var(--primary)" fill="url(#cQd)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="consumidas" stroke="var(--accent)" fill="url(#cCd)" strokeWidth={2} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-2 flex justify-center gap-4 text-[11px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Queimadas</span>
-                  <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" />Consumidas</span>
-                </div>
-              </>
-            ) : (
-              <p className="py-16 text-center text-sm text-muted-foreground">
-                Sem dados de calorias nos últimos 30 dias.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                  )}
+                </CardContent>
+              </Card>
+            )},
+            { id: "month", node: (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">
+                    {MONTHS[now.getMonth()]} / {now.getFullYear()}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3">
+                  <Stat icon={<ArrowUp className="h-4 w-4" />} label="Máximo" value={monthMax ? `${monthMax.toFixed(1)} kg` : "—"} />
+                  <Stat icon={<ArrowDown className="h-4 w-4" />} label="Mínimo" value={monthMin ? `${monthMin.toFixed(1)} kg` : "—"} />
+                  <Stat icon={<Minus className="h-4 w-4" />} label="Média" value={monthAvg ? `${monthAvg.toFixed(1)} kg` : "—"} />
+                  <Stat
+                    icon={monthLossPct != null && monthLossPct >= 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                    label="% mês"
+                    value={monthLossPct != null ? `${monthLossPct >= 0 ? "-" : "+"}${Math.abs(monthLossPct).toFixed(1)}%` : "—"}
+                    accent={monthLossPct != null && monthLossPct > 0 ? "good" : monthLossPct != null && monthLossPct < 0 ? "bad" : "neutral"}
+                  />
+                </CardContent>
+              </Card>
+            )},
+            { id: "activity-7d", node: (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Atividade — últimos 7 dias</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-56 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={last7Activity} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                        <Bar dataKey="passos" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )},
+            { id: "calories", node: (
+              <Card className="border-0 shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Calorias — últimos 30 dias</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) ? (
+                    <>
+                      <div className="h-56 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={calChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="cQd" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.6} />
+                                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                              </linearGradient>
+                              <linearGradient id="cCd" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.6} />
+                                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} />
+                            <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                            <Area type="monotone" dataKey="queimadas" stroke="var(--primary)" fill="url(#cQd)" strokeWidth={2} />
+                            <Area type="monotone" dataKey="consumidas" stroke="var(--accent)" fill="url(#cCd)" strokeWidth={2} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="mt-2 flex justify-center gap-4 text-[11px] text-muted-foreground">
+                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Queimadas</span>
+                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" />Consumidas</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="py-16 text-center text-sm text-muted-foreground">
+                      Sem dados de calorias nos últimos 30 dias.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )},
+          ]}
+        />
       </div>
     </div>
   );
