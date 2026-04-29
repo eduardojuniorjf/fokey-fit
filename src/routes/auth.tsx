@@ -51,8 +51,8 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Fokey Fit</CardTitle>
+        <CardHeader className="items-center text-center">
+          <img src={fokeyFitLogo} alt="FoKey Fit" className="h-16 w-auto object-contain mb-2" />
           <CardDescription>Entre ou crie sua conta</CardDescription>
         </CardHeader>
         <CardContent>
