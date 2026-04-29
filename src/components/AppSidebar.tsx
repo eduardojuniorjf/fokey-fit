@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Activity, Scale, ListChecks, User, History, LogOut, Dumbbell } from "lucide-react";
+import { Home, Activity, Scale, ListChecks, User, History, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import fokeyFitLogo from "@/assets/fokey-fit-logo.png";
 
 const items = [
   { to: "/", label: "Início", icon: Home, exact: true },
