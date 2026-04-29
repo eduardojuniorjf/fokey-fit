@@ -38,6 +38,7 @@ const routesConfig = {
     "/placeholder.svg",
     "/_worker.js",
     "/_routes.json",
+    "/server.js",
     "/wrangler.json",
     "/.assetsignore",
   ],
