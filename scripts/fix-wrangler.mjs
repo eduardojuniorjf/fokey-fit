@@ -16,6 +16,9 @@ if (!existsSync(workerSource)) {
 }
 
 copyFileSync(workerSource, workerTarget);
+// Also copy server.js to dist/client/server.js because chunks in
+// dist/client/assets/*.js reference "../server.js" relative to themselves.
+copyFileSync(workerSource, resolve("dist/client/server.js"));
 if (existsSync(serverAssetsSource)) {
   cpSync(serverAssetsSource, clientAssetsTarget, { recursive: true });
 }
@@ -36,6 +39,7 @@ const routesConfig = {
     "/_worker.js",
     "/_routes.json",
     "/wrangler.json",
+    "/server.js",
     "/.assetsignore",
   ],
 };
