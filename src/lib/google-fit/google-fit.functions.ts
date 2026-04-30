@@ -34,7 +34,7 @@ export const startGoogleFitOAuth = createServerFn({ method: "POST" })
   });
 
 /** Get current Google Fit connection status for the user. */
-export const getGoogleFitStatus = createServerFn({ method: "GET" })
+export const getGoogleFitStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
