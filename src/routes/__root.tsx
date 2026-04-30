@@ -35,7 +35,7 @@ export const Route = createRootRoute({
       { name: "description", content: "Desenvolvido por Eduardo Junior" },
       { name: "author", content: "Eduardo Junior" },
       { property: "og:title", content: "FoKey Fit" },
-      { property: "og:description", content: Desenvolvido por Eduardo Junior" },
+      { property: "og:description", content: "Desenvolvido por Eduardo Junior" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "" },
