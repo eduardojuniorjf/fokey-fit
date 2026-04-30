@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,10 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 function PerfilPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const startGoogleFitOAuthFn = useServerFn(startGoogleFitOAuth);
+  const getGoogleFitStatusFn = useServerFn(getGoogleFitStatus);
+  const disconnectGoogleFitFn = useServerFn(disconnectGoogleFit);
+  const syncGoogleFitFn = useServerFn(syncGoogleFit);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bio, setBio] = useState("");
@@ -33,7 +38,7 @@ function PerfilPage() {
 
   const refreshGfStatus = async () => {
     try {
-      const s = await getGoogleFitStatus();
+      const s = await getGoogleFitStatusFn();
       setGfStatus(s);
     } catch (e) {
       console.error(e);
@@ -47,7 +52,7 @@ function PerfilPage() {
   const handleConnectGoogleFit = async () => {
     setGfBusy(true);
     try {
-      const { url } = await startGoogleFitOAuth();
+      const { url } = await startGoogleFitOAuthFn();
       window.location.href = url;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao iniciar conexão");
@@ -58,7 +63,7 @@ function PerfilPage() {
   const handleSyncGoogleFit = async () => {
     setGfBusy(true);
     try {
-      const r = await syncGoogleFit();
+      const r = await syncGoogleFitFn();
       toast.success(`Sincronizado! ${r.activityCount} dia(s) de atividade, ${r.weightCount} peso(s).`);
       await refreshGfStatus();
     } catch (e) {
@@ -72,7 +77,7 @@ function PerfilPage() {
     if (!confirm("Desconectar o Google Fit?")) return;
     setGfBusy(true);
     try {
-      await disconnectGoogleFit();
+      await disconnectGoogleFitFn();
       toast.success("Google Fit desconectado");
       await refreshGfStatus();
     } catch (e) {
