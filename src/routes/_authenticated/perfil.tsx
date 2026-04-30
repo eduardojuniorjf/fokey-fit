@@ -24,6 +24,10 @@ export const Route = createFileRoute("/_authenticated/perfil")({
 function PerfilPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const startGoogleFitOAuthFn = useServerFn(startGoogleFitOAuth);
+  const getGoogleFitStatusFn = useServerFn(getGoogleFitStatus);
+  const disconnectGoogleFitFn = useServerFn(disconnectGoogleFit);
+  const syncGoogleFitFn = useServerFn(syncGoogleFit);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bio, setBio] = useState("");
@@ -34,7 +38,7 @@ function PerfilPage() {
 
   const refreshGfStatus = async () => {
     try {
-      const s = await getGoogleFitStatus();
+      const s = await getGoogleFitStatusFn();
       setGfStatus(s);
     } catch (e) {
       console.error(e);
