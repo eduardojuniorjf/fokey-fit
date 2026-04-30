@@ -18,7 +18,7 @@ function getOrigin(): string {
 
 /** Start OAuth: returns the Google consent URL for the current user. */
 export const startGoogleFitOAuth = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const origin = getOrigin();
@@ -36,7 +36,7 @@ export const startGoogleFitOAuth = createServerFn({ method: "POST" })
 
 /** Get current Google Fit connection status for the user. */
 export const getGoogleFitStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { data } = await supabase
@@ -53,7 +53,7 @@ export const getGoogleFitStatus = createServerFn({ method: "POST" })
 
 /** Disconnect Google Fit. */
 export const disconnectGoogleFit = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { error } = await supabase
@@ -66,7 +66,7 @@ export const disconnectGoogleFit = createServerFn({ method: "POST" })
 
 /** Sync Google Fit data (steps, calories, cardio points, weight). */
 export const syncGoogleFit = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
 
