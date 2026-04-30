@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   exchangeCodeForToken,
   getRedirectUri,
-} from "@/server/google-fit.server";
+} from "@/lib/google-fit/google-fit.server";
 
 function htmlResponse(opts: {
   title: string;

@@ -14,7 +14,7 @@ import {
   getGoogleFitStatus,
   disconnectGoogleFit,
   syncGoogleFit,
-} from "@/server/google-fit.functions";
+} from "@/lib/google-fit/google-fit.functions";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: PerfilPage,
