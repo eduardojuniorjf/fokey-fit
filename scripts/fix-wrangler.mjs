@@ -16,9 +16,6 @@ if (!existsSync(workerSource)) {
 }
 
 copyFileSync(workerSource, workerTarget);
-// Split SSR chunks in dist/client/assets/*.js import from "../server.js" — i.e.
-// they expect dist/client/server.js to exist alongside the assets folder.
-copyFileSync(workerSource, resolve("dist/client/server.js"));
 if (existsSync(serverAssetsSource)) {
   cpSync(serverAssetsSource, clientAssetsTarget, { recursive: true });
 }
@@ -38,7 +35,6 @@ const routesConfig = {
     "/placeholder.svg",
     "/_worker.js",
     "/_routes.json",
-    "/server.js",
     "/wrangler.json",
     "/.assetsignore",
   ],
