@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Activity, Scale, ListChecks, User, History, LogOut, Dumbbell } from "lucide-react";
+import { Home, Activity, Scale, ListChecks, User, History, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import fokeyFitLogo from "@/assets/fokey-fit-logo.png";
 
 const items = [
   { to: "/", label: "Início", icon: Home, exact: true },
@@ -23,17 +24,8 @@ export function AppSidebar() {
       aria-label="Navegação lateral"
     >
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sidebar-border">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-primary-foreground"
-          style={{ background: "var(--gradient-primary)" }}
-        >
-          <Dumbbell className="h-5 w-5" />
-        </div>
-        <div className="leading-tight">
-          <p className="text-sm font-bold">FitTrack</p>
-          <p className="text-[11px] text-muted-foreground">Seu progresso diário</p>
-        </div>
+      <div className="flex items-center justify-center px-5 py-5 border-b border-sidebar-border">
+        <img src={fokeyFitLogo} alt="Fokey Fit" className="h-12 w-auto object-contain" />
       </div>
 
       {/* Nav */}

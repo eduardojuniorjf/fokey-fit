@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import fokeyFitLogo from "@/assets/fokey-fit-logo.png";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -50,8 +51,8 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Fokey Fit</CardTitle>
+        <CardHeader className="items-center text-center">
+          <img src={fokeyFitLogo} alt="Fokey Fit" className="h-16 w-auto object-contain mb-2" />
           <CardDescription>Entre ou crie sua conta</CardDescription>
         </CardHeader>
         <CardContent>
