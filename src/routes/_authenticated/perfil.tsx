@@ -52,7 +52,11 @@ function PerfilPage() {
   const handleConnectGoogleFit = async () => {
     setGfBusy(true);
     try {
-      const { url } = await startGoogleFitOAuthFn();
+      const result = await startGoogleFitOAuthFn();
+      const url = result?.url;
+      if (typeof url !== "string" || !url.startsWith("https://accounts.google.com/")) {
+        throw new Error("Falha ao iniciar conexão com o Google Fit");
+      }
       window.location.href = url;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao iniciar conexão");
