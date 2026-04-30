@@ -52,7 +52,7 @@ function PerfilPage() {
   const handleConnectGoogleFit = async () => {
     setGfBusy(true);
     try {
-      const { url } = await startGoogleFitOAuth();
+      const { url } = await startGoogleFitOAuthFn();
       window.location.href = url;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao iniciar conexão");
@@ -63,7 +63,7 @@ function PerfilPage() {
   const handleSyncGoogleFit = async () => {
     setGfBusy(true);
     try {
-      const r = await syncGoogleFit();
+      const r = await syncGoogleFitFn();
       toast.success(`Sincronizado! ${r.activityCount} dia(s) de atividade, ${r.weightCount} peso(s).`);
       await refreshGfStatus();
     } catch (e) {
@@ -77,7 +77,7 @@ function PerfilPage() {
     if (!confirm("Desconectar o Google Fit?")) return;
     setGfBusy(true);
     try {
-      await disconnectGoogleFit();
+      await disconnectGoogleFitFn();
       toast.success("Google Fit desconectado");
       await refreshGfStatus();
     } catch (e) {
