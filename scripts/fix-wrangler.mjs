@@ -39,6 +39,7 @@ const routesConfig = {
     "/_worker.js",
     "/_routes.json",
     "/wrangler.json",
+    "/server.js",
     "/.assetsignore",
   ],
 };
