@@ -114,7 +114,7 @@ export function MasonryDashboard({ widgets, storageKey = "dashboard-order-v1" }:
       >
         <SortableContext items={sorted} strategy={rectSortingStrategy}>
           {/* Masonry via CSS columns */}
-          <div className="columns-1 gap-5 lg:columns-2 xl:columns-3 [&>*]:mb-5 [&>*]:break-inside-avoid">
+          <div className="columns-1 gap-5 lg:columns-2 [&>*]:mb-5 [&>*]:break-inside-avoid">
             {sorted.map((id) => (
               <SortableItem key={id} id={id} isOverlay={activeId === id}>
                 {widgetMap.get(id)}
