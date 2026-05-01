@@ -1,7 +1,7 @@
 // Post-build: prepare a Cloudflare Pages-compatible output. TanStack Start
 // emits the SSR worker in dist/server, while Pages serves dist/client. Without
 // an _worker.js in dist/client, Pages uploads only static assets and the app 404s.
-import { copyFileSync, cpSync, existsSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const target = resolve("dist/client/wrangler.json");
@@ -47,10 +47,9 @@ writeFileSync(routesTarget, JSON.stringify(routesConfig, null, 2));
 console.log(`[fix-wrangler] Wrote _routes.json to ${routesTarget}`);
 
 const pagesConfig = {
+  ...JSON.parse(readFileSync(resolve("wrangler.jsonc"), "utf8")),
   name: "fokey-fit",
   pages_build_output_dir: ".",
-  compatibility_date: "2025-09-24",
-  compatibility_flags: ["nodejs_compat"],
 };
 
 writeFileSync(target, JSON.stringify(pagesConfig, null, 2));
