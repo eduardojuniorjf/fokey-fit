@@ -51,6 +51,15 @@ const pagesConfig = {
   pages_build_output_dir: ".",
   compatibility_date: "2025-09-24",
   compatibility_flags: ["nodejs_compat"],
+  vars: {
+    SUPABASE_URL: "https://bpsiihhonyzdpvbaxkhl.supabase.co",
+    SUPABASE_PUBLISHABLE_KEY:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImJwc2lpaGhvbnl6ZHB2YmF4a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNjIwODEsImV4cCI6MjA5MjgzODA4MX0.yoQ3Bs851w7bxXBosQWPr3Tlx6Z9Ah-L00dyTcWafEQ".replace(
+        "eyJpc3MiOiJIUzI1NiIs",
+        "eyJpc3MiOiJIUzI1NiIs"
+      ),
+    GOOGLE_FIT_REDIRECT_URI: "https://fit.fokey.com.br/api/public/google-fit-callback",
+  },
 };
 
 writeFileSync(target, JSON.stringify(pagesConfig, null, 2));
