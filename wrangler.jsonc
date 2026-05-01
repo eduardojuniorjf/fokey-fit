@@ -7,6 +7,7 @@
   "vars": {
     "SUPABASE_URL": "https://bpsiihhonyzdpvbaxkhl.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwc2lpaGhvbnl6ZHB2YmF4a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNjIwODEsImV4cCI6MjA5MjgzODA4MX0.yoQ3Bs851w7bxXBosQWPr3Tlx6Z9Ah-L00dyTcWafEQ",
-    "GOOGLE_FIT_REDIRECT_URI": "https://fit.fokey.com.br/api/public/google-fit-callback"
+    "GOOGLE_FIT_REDIRECT_URI": "https://fit.fokey.com.br/api/public/google-fit-callback",
+    "GOOGLE_FIT_CLIENT_ID": "950359699301-c7a1or9j0a6qb5g1km2tul60lbhrb4f9.apps.googleusercontent.com"
   }
 }
