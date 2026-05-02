@@ -14,8 +14,17 @@ export interface ActivityRow {
 type Range = "7d" | "15d" | "30d" | "month";
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
+/** erro data 1
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
+}**/
+
+//correção erro data 1
+function isoDate(d: Date) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
@@ -64,11 +73,41 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
 
     const days = range === "7d" ? 7 : range === "15d" ? 15 : 30;
     const out: { date: string; passos: number; cardio: number; full: string }[] = [];
-    for (let i = days - 1; i >= 0; i--) {
+    /**    erro da data
+
+for (let i = days - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const iso = isoDate(d);
       const row = map.get(iso);
+      out.push({
+        date:
+          days <= 7
+            ? d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
+            : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        full: d.toLocaleDateString("pt-BR"),
+        passos: row?.steps ?? 0,
+        cardio: row?.cardio_points ?? 0,
+      });
+    }  **/
+
+    // correção erro da data
+    // ... dentro do useMemo ...
+    const days = range === "7d" ? 7 : range === "15d" ? 15 : 30;
+    const out: { date: string; passos: number; cardio: number; full: string }[] = [];
+
+    // Criamos uma data de referência "hoje" sem horas/minutos para evitar saltos
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+
+      // Esta função agora deve usar o fuso local (veja correção abaixo)
+      const iso = isoDate(d);
+      const row = map.get(iso);
+
       out.push({
         date:
           days <= 7
