@@ -64,7 +64,7 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
 
     const days = range === "7d" ? 7 : range === "15d" ? 15 : 30;
     const out: { date: string; passos: number; cardio: number; full: string }[] = [];
-    for (let i = days - 0; i >= 0; i--) {
+    for (let i = days - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const iso = isoDate(d);
