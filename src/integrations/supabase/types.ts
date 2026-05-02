@@ -191,6 +191,33 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_preferences: {
+        Row: {
+          created_at: string
+          desktop_hidden: string[]
+          id: string
+          mobile_hidden: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          desktop_hidden?: string[]
+          id?: string
+          mobile_hidden?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          desktop_hidden?: string[]
+          id?: string
+          mobile_hidden?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       habit_logs: {
         Row: {
           created_at: string

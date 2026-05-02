@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { MasonryDashboard } from "@/components/MasonryDashboard";
 import { ActivityChartCard } from "@/components/ActivityChartCard";
 import { getDailyQuote } from "@/lib/dailyQuote";
+import { EMPTY_PREFS, type DashboardPrefs } from "@/lib/dashboardPrefs";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
@@ -87,6 +88,7 @@ function DashboardPage() {
   const [actGoals, setActGoals] = useState<ActivityGoals>(DEFAULT_ACT_GOALS);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
+  const [prefs, setPrefs] = useState<DashboardPrefs>(EMPTY_PREFS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -108,8 +110,9 @@ function DashboardPage() {
       supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
       supabase.from("habits").select("id, name, daily_target, unit").eq("active", true).order("created_at", { ascending: true }),
       supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
+      supabase.from("dashboard_preferences").select("mobile_hidden, desktop_hidden").eq("user_id", user.id).maybeSingle(),
     ])
-      .then(([profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes]) => {
+      .then(([profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes, prefsRes]) => {
         if (profileRes.data) setDisplayName(profileRes.data.display_name);
         if (weightRes.error) toast.error(weightRes.error.message);
         else setWeights((weightRes.data ?? []) as WeightRow[]);
@@ -118,6 +121,10 @@ function DashboardPage() {
         if (!actGoalsRes.error && actGoalsRes.data) setActGoals(actGoalsRes.data as ActivityGoals);
         if (!habitsRes.error) setHabits((habitsRes.data ?? []) as Habit[]);
         if (!logsRes.error) setHabitLogs((logsRes.data ?? []) as HabitLog[]);
+        if (!prefsRes.error && prefsRes.data) setPrefs({
+          mobile_hidden: prefsRes.data.mobile_hidden ?? [],
+          desktop_hidden: prefsRes.data.desktop_hidden ?? [],
+        });
       })
       .finally(() => setLoading(false));
   }, [user]);
@@ -227,6 +234,9 @@ function DashboardPage() {
     return out;
   }, [activity]);
 
+  const showM = (id: string) => !prefs.mobile_hidden.includes(id);
+  const showD = (id: string) => !prefs.desktop_hidden.includes(id);
+
   return (
     <div className="mx-auto w-full max-w-md lg:max-w-[1280px] lg:px-8 lg:py-8">
       {/* Hero — full bleed mobile, contido desktop */}
@@ -255,114 +265,143 @@ function DashboardPage() {
 
       {/* ===== MOBILE LAYOUT (mantido) ===== */}
       <div className="-mt-6 space-y-5 px-4 pb-6 lg:hidden">
-        <GoalCard goal={goal} progressPct={progressPct} currentWeight={currentWeight} daysLeft={daysLeft} />
+        {showM("goal") && (
+          <GoalCard goal={goal} progressPct={progressPct} currentWeight={currentWeight} daysLeft={daysLeft} />
+        )}
 
         {/* KPIs do dia — mesmas infos do desktop */}
-        <div className="grid grid-cols-2 gap-3">
-          <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
-            value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-            sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
-          <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
-            value={String(todayAct?.cardio_points ?? 0)}
-            sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
-          <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
-            value={`${todayAct?.energy_kcal ?? 0} kcal`}
-            sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
-          <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
-            value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
-            sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
-            accent={bmiCat?.tone} />
-        </div>
-
-        {/* Insight do dia */}
-        <Card className="border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm leading-relaxed">{insight}</p>
-            <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
-              <Award className="h-4 w-4 text-primary" />
-              <p className="text-xs">
-                <span className="font-semibold text-primary">{streak}</span>{" "}
-                {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <MonthPanel
-          monthMax={monthMax} monthMin={monthMin} monthAvg={monthAvg} monthLossPct={monthLossPct} now={now}
-        />
-
-        <div>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registrar agora</h2>
-          <div className="grid grid-cols-4 gap-3">
-            <QuickAction to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso" />
-            <QuickAction to="/atividade" icon={<Activity className="h-5 w-5" />} label="Atividade" />
-            <QuickAction to="/habitos" icon={<ListChecks className="h-5 w-5" />} label="Hábitos" />
-            <QuickAction to="/historico" icon={<History className="h-5 w-5" />} label="Histórico" />
-          </div>
-        </div>
-
-        {/* Hábitos hoje */}
-        <Card className="border-0 shadow-md">
-          <CardHeader className="pb-2 flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
-            </CardTitle>
-            <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
-          </CardHeader>
-          <CardContent>
-            {habits.length === 0 ? (
-              <Link to="/habitos" className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary">
-                Crie seus primeiros hábitos
-              </Link>
-            ) : (
-              <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
-                {habitProgress.map(({ habit, total, pct }) => (
-                  <li key={habit.id}>
-                    <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className="font-medium truncate">{habit.name}</span>
-                      <span className="text-muted-foreground tabular-nums">
-                        {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
-                      </span>
-                    </div>
-                    <Progress value={pct} className="h-1.5" />
-                  </li>
-                ))}
-              </ul>
+        {(showM("kpi-steps") || showM("kpi-cardio") || showM("kpi-energy") || showM("kpi-weight")) && (
+          <div className="grid grid-cols-2 gap-3">
+            {showM("kpi-steps") && (
+              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+                value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
             )}
-          </CardContent>
-        </Card>
+            {showM("kpi-cardio") && (
+              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+                value={String(todayAct?.cardio_points ?? 0)}
+                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
+            )}
+            {showM("kpi-energy") && (
+              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+                value={`${todayAct?.energy_kcal ?? 0} kcal`}
+                sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
+            )}
+            {showM("kpi-weight") && (
+              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+                value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
+                sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
+                accent={bmiCat?.tone} />
+            )}
+          </div>
+        )}
 
-        <WeightChart loading={loading} data={weightChartData} />
+        {showM("insight") && (
+          <Card className="border-0 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm leading-relaxed">{insight}</p>
+              <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
+                <Award className="h-4 w-4 text-primary" />
+                <p className="text-xs">
+                  <span className="font-semibold text-primary">{streak}</span>{" "}
+                  {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Atividade — 7 dias */}
-        <ActivityChartCard activity={activity} />
+        {showM("month") && (
+          <MonthPanel
+            monthMax={monthMax} monthMin={monthMin} monthAvg={monthAvg} monthLossPct={monthLossPct} now={now}
+          />
+        )}
 
-        {calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) && <CalChart data={calChartData} />}
+        {showM("quick-actions") && (
+          <div>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registrar agora</h2>
+            <div className="grid grid-cols-4 gap-3">
+              <QuickAction to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso" />
+              <QuickAction to="/atividade" icon={<Activity className="h-5 w-5" />} label="Atividade" />
+              <QuickAction to="/habitos" icon={<ListChecks className="h-5 w-5" />} label="Hábitos" />
+              <QuickAction to="/historico" icon={<History className="h-5 w-5" />} label="Histórico" />
+            </div>
+          </div>
+        )}
+
+        {showM("habits") && (
+          <Card className="border-0 shadow-md">
+            <CardHeader className="pb-2 flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
+              </CardTitle>
+              <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
+            </CardHeader>
+            <CardContent>
+              {habits.length === 0 ? (
+                <Link to="/habitos" className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary">
+                  Crie seus primeiros hábitos
+                </Link>
+              ) : (
+                <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
+                  {habitProgress.map(({ habit, total, pct }) => (
+                    <li key={habit.id}>
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <span className="font-medium truncate">{habit.name}</span>
+                        <span className="text-muted-foreground tabular-nums">
+                          {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
+                        </span>
+                      </div>
+                      <Progress value={pct} className="h-1.5" />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {showM("weight-chart") && <WeightChart loading={loading} data={weightChartData} />}
+
+        {showM("activity-7d") && <ActivityChartCard activity={activity} />}
+
+        {showM("calories") && calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) && (
+          <CalChart data={calChartData} />
+        )}
       </div>
 
       {/* ===== DESKTOP: KPIs FIXOS NO TOPO + MASONRY ===== */}
       <div className="hidden lg:mt-6 lg:block">
-        <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
-          <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
-            value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-            sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
-          <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
-            value={String(todayAct?.cardio_points ?? 0)}
-            sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
-          <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
-            value={`${todayAct?.energy_kcal ?? 0} kcal`}
-            sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
-          <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
-            value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
-            sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
-            accent={bmiCat?.tone} />
-        </div>
+        {(showD("kpi-steps") || showD("kpi-cardio") || showD("kpi-energy") || showD("kpi-weight")) && (
+          <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
+            {showD("kpi-steps") && (
+              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+                value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
+            )}
+            {showD("kpi-cardio") && (
+              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+                value={String(todayAct?.cardio_points ?? 0)}
+                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
+            )}
+            {showD("kpi-energy") && (
+              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+                value={`${todayAct?.energy_kcal ?? 0} kcal`}
+                sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
+            )}
+            {showD("kpi-weight") && (
+              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+                value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
+                sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
+                accent={bmiCat?.tone} />
+            )}
+          </div>
+        )}
 
         <MasonryDashboard
           widgets={[
@@ -542,7 +581,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-          ]}
+          ].filter((w) => showD(w.id))}
         />
       </div>
     </div>

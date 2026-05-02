@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, User as UserIcon, Activity, RefreshCw, Unplug } from "lucide-react";
+import { LogOut, User as UserIcon, Activity, RefreshCw, Unplug, Settings } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   startGoogleFitOAuth,
@@ -212,7 +213,14 @@ function PerfilPage() {
         </Card>
       </div>
 
-      <Button variant="outline" className="mt-6 w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+      <Button asChild variant="outline" className="mt-6 w-full">
+        <Link to="/configuracoes">
+          <Settings className="mr-2 h-4 w-4" />
+          Configurações do dashboard
+        </Link>
+      </Button>
+
+      <Button variant="outline" className="mt-3 w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
         onClick={handleSignOut}>
         <LogOut className="mr-2 h-4 w-4" />Sair da conta
       </Button>
