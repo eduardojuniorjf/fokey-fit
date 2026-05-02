@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { MasonryDashboard } from "@/components/MasonryDashboard";
 import { ActivityChartCard } from "@/components/ActivityChartCard";
 import { getDailyQuote } from "@/lib/dailyQuote";
+import { EMPTY_PREFS, type DashboardPrefs } from "@/lib/dashboardPrefs";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
