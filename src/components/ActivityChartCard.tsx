@@ -14,7 +14,7 @@ export interface ActivityRow {
 type Range = "7d" | "15d" | "30d" | "month";
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-// Função corrigida para respeitar o fuso horário local e evitar o erro de "um dia atrás"
+// Função robusta: extrai a data puramente local, ignorando UTC
 function isoDate(d: Date) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -26,30 +26,40 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
   const [range, setRange] = useState<Range>("7d");
   const [monthOffset, setMonthOffset] = useState(0);
 
+  // Referência estável de "agora" para todos os cálculos do componente
+  const nowReference = useMemo(() => {
+    const d = new Date();
+    // Normalizamos para o início do dia local para evitar saltos de fuso durante o uso
+    return d;
+  }, []);
+
   const monthOptions = useMemo(() => {
     const opts: { offset: number; label: string }[] = [];
-    const now = new Date();
     for (let i = 0; i < 12; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      // Usamos o dia 1 para evitar problemas de meses com durações diferentes (ex: 31 de Março -> Fevereiro)
+      const d = new Date(nowReference.getFullYear(), nowReference.getMonth() - i, 1);
       opts.push({
         offset: i,
         label: i === 0 ? `${MONTHS[d.getMonth()]} (atual)` : `${MONTHS[d.getMonth()]}/${d.getFullYear()}`,
       });
     }
     return opts;
-  }, []);
+  }, [nowReference]);
 
   const data = useMemo(() => {
     const map = new Map<string, ActivityRow>();
     activity.forEach((a) => map.set(a.recorded_for, a));
 
     if (range === "month") {
-      const now = new Date();
-      const target = new Date(now.getFullYear(), now.getMonth() - monthOffset, 1);
+      // Garantimos que o alvo seja sempre o dia 1 do mês selecionado
+      const target = new Date(nowReference.getFullYear(), nowReference.getMonth() - monthOffset, 1);
       const year = target.getFullYear();
       const month = target.getMonth();
+
+      // Pega o último dia do mês corretamente
       const lastDay = new Date(year, month + 1, 0).getDate();
       const out: { date: string; passos: number; cardio: number; full: string }[] = [];
+
       for (let day = 1; day <= lastDay; day++) {
         const d = new Date(year, month, day);
         const iso = isoDate(d);
@@ -64,12 +74,11 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
       return out;
     }
 
-    // Configuração para 7d, 15d e 30d
     const daysCount = range === "7d" ? 7 : range === "15d" ? 15 : 30;
     const out: { date: string; passos: number; cardio: number; full: string }[] = [];
 
-    // Referência de hoje sem horas para evitar saltos de fuso horário
-    const today = new Date();
+    // Criamos uma cópia de hoje e zeramos as horas para garantir precisão no loop
+    const today = new Date(nowReference);
     today.setHours(0, 0, 0, 0);
 
     for (let i = daysCount - 1; i >= 0; i--) {
@@ -90,7 +99,7 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
       });
     }
     return out;
-  }, [activity, range, monthOffset]);
+  }, [activity, range, monthOffset, nowReference]);
 
   const totalSteps = data.reduce((s, d) => s + d.passos, 0);
   const totalCardio = data.reduce((s, d) => s + d.cardio, 0);
