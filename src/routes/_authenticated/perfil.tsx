@@ -213,7 +213,14 @@ function PerfilPage() {
         </Card>
       </div>
 
-      <Button variant="outline" className="mt-6 w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+      <Button asChild variant="outline" className="mt-6 w-full">
+        <Link to="/configuracoes">
+          <Settings className="mr-2 h-4 w-4" />
+          Configurações do dashboard
+        </Link>
+      </Button>
+
+      <Button variant="outline" className="mt-3 w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
         onClick={handleSignOut}>
         <LogOut className="mr-2 h-4 w-4" />Sair da conta
       </Button>
