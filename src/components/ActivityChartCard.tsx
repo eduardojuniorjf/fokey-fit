@@ -1,12 +1,8 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
-} from "recharts";
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Activity } from "lucide-react";
 
 export interface ActivityRow {
@@ -68,15 +64,16 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
 
     const days = range === "7d" ? 7 : range === "15d" ? 15 : 30;
     const out: { date: string; passos: number; cardio: number; full: string }[] = [];
-    for (let i = days - 1; i >= 0; i--) {
+    for (let i = days - 0; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const iso = isoDate(d);
       const row = map.get(iso);
       out.push({
-        date: days <= 7
-          ? d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
-          : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        date:
+          days <= 7
+            ? d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
+            : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
         full: d.toLocaleDateString("pt-BR"),
         passos: row?.steps ?? 0,
         cardio: row?.cardio_points ?? 0,
@@ -94,7 +91,7 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
     "7d": "7 dias",
     "15d": "15 dias",
     "30d": "30 dias",
-    "month": "Mês",
+    month: "Mês",
   };
 
   return (
@@ -107,10 +104,7 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
           </CardTitle>
           <div className="flex items-center gap-2">
             {range === "month" && (
-              <Select
-                value={String(monthOffset)}
-                onValueChange={(v) => setMonthOffset(Number(v))}
-              >
+              <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
                 <SelectTrigger className="h-7 w-[140px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -130,10 +124,30 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
               onValueChange={(v) => v && setRange(v as Range)}
               className="rounded-md border border-border bg-muted/40 p-0.5"
             >
-              <ToggleGroupItem value="7d" className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">7d</ToggleGroupItem>
-              <ToggleGroupItem value="15d" className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">15d</ToggleGroupItem>
-              <ToggleGroupItem value="30d" className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">30d</ToggleGroupItem>
-              <ToggleGroupItem value="month" className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Mês</ToggleGroupItem>
+              <ToggleGroupItem
+                value="7d"
+                className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                7d
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="15d"
+                className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                15d
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="30d"
+                className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                30d
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="month"
+                className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                Mês
+              </ToggleGroupItem>
             </ToggleGroup>
           </div>
         </div>
@@ -155,7 +169,12 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
               />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip
-                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }}
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
                 labelFormatter={(_, p) => p?.[0]?.payload?.full ?? ""}
               />
               <Legend wrapperStyle={{ fontSize: "11px" }} />
