@@ -581,7 +581,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-          ]}
+          ].filter((w) => showD(w.id))}
         />
       </div>
     </div>
