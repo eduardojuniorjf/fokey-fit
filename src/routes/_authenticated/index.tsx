@@ -234,6 +234,9 @@ function DashboardPage() {
     return out;
   }, [activity]);
 
+  const showM = (id: string) => !prefs.mobile_hidden.includes(id);
+  const showD = (id: string) => !prefs.desktop_hidden.includes(id);
+
   return (
     <div className="mx-auto w-full max-w-md lg:max-w-[1280px] lg:px-8 lg:py-8">
       {/* Hero — full bleed mobile, contido desktop */}
