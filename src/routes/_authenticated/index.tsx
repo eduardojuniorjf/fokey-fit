@@ -110,8 +110,9 @@ function DashboardPage() {
       supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
       supabase.from("habits").select("id, name, daily_target, unit").eq("active", true).order("created_at", { ascending: true }),
       supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
+      supabase.from("dashboard_preferences").select("mobile_hidden, desktop_hidden").eq("user_id", user.id).maybeSingle(),
     ])
-      .then(([profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes]) => {
+      .then(([profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes, prefsRes]) => {
         if (profileRes.data) setDisplayName(profileRes.data.display_name);
         if (weightRes.error) toast.error(weightRes.error.message);
         else setWeights((weightRes.data ?? []) as WeightRow[]);
