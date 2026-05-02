@@ -14,12 +14,7 @@ export interface ActivityRow {
 type Range = "7d" | "15d" | "30d" | "month";
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-/** erro data 1
-function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}**/
-
-//correção erro data 1
+// Função corrigida para respeitar o fuso horário local e evitar o erro de "um dia atrás"
 function isoDate(d: Date) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -29,10 +24,8 @@ function isoDate(d: Date) {
 
 export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
   const [range, setRange] = useState<Range>("7d");
-  // monthOffset = 0 → mês atual; 1 → mês anterior; 2 → dois meses atrás...
   const [monthOffset, setMonthOffset] = useState(0);
 
-  // Lista de meses disponíveis a partir dos dados (até 12 meses)
   const monthOptions = useMemo(() => {
     const opts: { offset: number; label: string }[] = [];
     const now = new Date();
@@ -71,46 +64,24 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
       return out;
     }
 
-    const days = range === "7d" ? 7 : range === "15d" ? 15 : 30;
-    const out: { date: string; passos: number; cardio: number; full: string }[] = [];
-    /**    erro da data
-
-for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const iso = isoDate(d);
-      const row = map.get(iso);
-      out.push({
-        date:
-          days <= 7
-            ? d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
-            : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-        full: d.toLocaleDateString("pt-BR"),
-        passos: row?.steps ?? 0,
-        cardio: row?.cardio_points ?? 0,
-      });
-    }  **/
-
-    // correção erro da data
-    // ... dentro do useMemo ...
-    const days = range === "7d" ? 7 : range === "15d" ? 15 : 30;
+    // Configuração para 7d, 15d e 30d
+    const daysCount = range === "7d" ? 7 : range === "15d" ? 15 : 30;
     const out: { date: string; passos: number; cardio: number; full: string }[] = [];
 
-    // Criamos uma data de referência "hoje" sem horas/minutos para evitar saltos
+    // Referência de hoje sem horas para evitar saltos de fuso horário
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    for (let i = days - 1; i >= 0; i--) {
+    for (let i = daysCount - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
 
-      // Esta função agora deve usar o fuso local (veja correção abaixo)
       const iso = isoDate(d);
       const row = map.get(iso);
 
       out.push({
         date:
-          days <= 7
+          daysCount <= 7
             ? d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
             : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
         full: d.toLocaleDateString("pt-BR"),
