@@ -14,17 +14,8 @@ export interface ActivityRow {
 type Range = "7d" | "15d" | "30d" | "month";
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-/** Antigo fuso
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
-}**/
-
-/** novo fuso UCT 3 **/
-function isoDate(d: Date) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
