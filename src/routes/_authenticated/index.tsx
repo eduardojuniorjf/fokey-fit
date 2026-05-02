@@ -121,6 +121,10 @@ function DashboardPage() {
         if (!actGoalsRes.error && actGoalsRes.data) setActGoals(actGoalsRes.data as ActivityGoals);
         if (!habitsRes.error) setHabits((habitsRes.data ?? []) as Habit[]);
         if (!logsRes.error) setHabitLogs((logsRes.data ?? []) as HabitLog[]);
+        if (!prefsRes.error && prefsRes.data) setPrefs({
+          mobile_hidden: prefsRes.data.mobile_hidden ?? [],
+          desktop_hidden: prefsRes.data.desktop_hidden ?? [],
+        });
       })
       .finally(() => setLoading(false));
   }, [user]);
