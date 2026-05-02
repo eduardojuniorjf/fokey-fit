@@ -88,6 +88,7 @@ function DashboardPage() {
   const [actGoals, setActGoals] = useState<ActivityGoals>(DEFAULT_ACT_GOALS);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
+  const [prefs, setPrefs] = useState<DashboardPrefs>(EMPTY_PREFS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
