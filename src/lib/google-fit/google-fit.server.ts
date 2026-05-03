@@ -175,9 +175,10 @@ function sumPoints(points: any[] | undefined, key: "intVal" | "fpVal"): number {
 export async function fetchDailySummaries(params: {
   accessToken: string;
   days: number;
+  tzOffsetMinutes?: number;
 }): Promise<DailyFitnessSummary[]> {
-  const end = Date.now();
-  const start = end - params.days * DAY_MS;
+  const tz = params.tzOffsetMinutes ?? 0;
+  const { start, end } = computeWindow(params.days, tz);
 
   const result = await fitnessAggregate(params.accessToken, {
     aggregateBy: [
@@ -198,7 +199,7 @@ export async function fetchDailySummaries(params: {
     const find = (type: string) =>
       ds.find((d: any) => d.dataSourceId?.includes(type))?.point;
     return {
-      date: isoDate(Number(b.startTimeMillis)),
+      date: localDateLabel(Number(b.startTimeMillis), tz),
       steps: Math.round(sumPoints(find("step_count"), "intVal")),
       cardioPoints: Math.round(sumPoints(find("heart_minutes"), "fpVal")),
       activeMinutes: Math.round(sumPoints(find("active_minutes"), "intVal")),
@@ -211,9 +212,10 @@ export async function fetchDailySummaries(params: {
 export async function fetchWeightSamples(params: {
   accessToken: string;
   days: number;
+  tzOffsetMinutes?: number;
 }): Promise<WeightSample[]> {
-  const end = Date.now();
-  const start = end - params.days * DAY_MS;
+  const tz = params.tzOffsetMinutes ?? 0;
+  const { start, end } = computeWindow(params.days, tz);
 
   const result = await fitnessAggregate(params.accessToken, {
     aggregateBy: [{ dataTypeName: "com.google.weight" }],
@@ -237,7 +239,7 @@ export async function fetchWeightSamples(params: {
     }
     if (count > 0) {
       samples.push({
-        recordedAt: isoDate(Number(b.startTimeMillis)),
+        recordedAt: localDateLabel(Number(b.startTimeMillis), tz),
         weightKg: Number((sum / count).toFixed(2)),
       });
     }
