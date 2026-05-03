@@ -93,40 +93,50 @@ function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    const today = todayISO();
-    Promise.all([
-      supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
-      supabase
-        .from("weight_entries")
-        .select("recorded_at, weight_kg, calories_burned, calories_consumed, water_liters")
-        .order("recorded_at", { ascending: true })
-        .limit(180),
-      supabase.from("weight_goals").select("*").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase
-        .from("daily_activity")
-        .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
-        .order("recorded_for", { ascending: true })
-        .limit(365),
-      supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
-      supabase.from("habits").select("id, name, daily_target, unit").eq("active", true).order("created_at", { ascending: true }),
-      supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
-      supabase.from("dashboard_preferences").select("mobile_hidden, desktop_hidden").eq("user_id", user.id).maybeSingle(),
-    ])
-      .then(([profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes, prefsRes]) => {
-        if (profileRes.data) setDisplayName(profileRes.data.display_name);
-        if (weightRes.error) toast.error(weightRes.error.message);
-        else setWeights((weightRes.data ?? []) as WeightRow[]);
-        if (!goalRes.error) setGoal((goalRes.data as Goal | null) ?? null);
-        if (!actRes.error) setActivity((actRes.data ?? []) as DailyActivity[]);
-        if (!actGoalsRes.error && actGoalsRes.data) setActGoals(actGoalsRes.data as ActivityGoals);
-        if (!habitsRes.error) setHabits((habitsRes.data ?? []) as Habit[]);
-        if (!logsRes.error) setHabitLogs((logsRes.data ?? []) as HabitLog[]);
-        if (!prefsRes.error && prefsRes.data) setPrefs({
-          mobile_hidden: prefsRes.data.mobile_hidden ?? [],
-          desktop_hidden: prefsRes.data.desktop_hidden ?? [],
-        });
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const load = async () => {
+      const today = todayISO();
+      const [profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes, prefsRes] =
+        await Promise.all([
+          supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
+          supabase
+            .from("weight_entries")
+            .select("recorded_at, weight_kg, calories_burned, calories_consumed, water_liters")
+            .order("recorded_at", { ascending: true })
+            .limit(180),
+          supabase.from("weight_goals").select("*").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+          supabase
+            .from("daily_activity")
+            .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
+            .order("recorded_for", { ascending: true })
+            .limit(365),
+          supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
+          supabase.from("habits").select("id, name, daily_target, unit").eq("active", true).order("created_at", { ascending: true }),
+          supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
+          supabase.from("dashboard_preferences").select("mobile_hidden, desktop_hidden").eq("user_id", user.id).maybeSingle(),
+        ]);
+      if (cancelled) return;
+      if (profileRes.data) setDisplayName(profileRes.data.display_name);
+      if (weightRes.error) toast.error(weightRes.error.message);
+      else setWeights((weightRes.data ?? []) as WeightRow[]);
+      if (!goalRes.error) setGoal((goalRes.data as Goal | null) ?? null);
+      if (!actRes.error) setActivity((actRes.data ?? []) as DailyActivity[]);
+      if (!actGoalsRes.error && actGoalsRes.data) setActGoals(actGoalsRes.data as ActivityGoals);
+      if (!habitsRes.error) setHabits((habitsRes.data ?? []) as Habit[]);
+      if (!logsRes.error) setHabitLogs((logsRes.data ?? []) as HabitLog[]);
+      if (!prefsRes.error && prefsRes.data) setPrefs({
+        mobile_hidden: prefsRes.data.mobile_hidden ?? [],
+        desktop_hidden: prefsRes.data.desktop_hidden ?? [],
+      });
+      setLoading(false);
+    };
+    load();
+    const onSynced = () => load();
+    window.addEventListener("gf:synced", onSynced);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("gf:synced", onSynced);
+    };
   }, [user]);
 
   // ------ Meta progress ------
