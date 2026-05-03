@@ -138,8 +138,26 @@ export interface WeightSample {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function isoDate(ts: number) {
-  return new Date(ts).toISOString().slice(0, 10);
+/** Local-date label (YYYY-MM-DD) for a timestamp, shifted by user's tz offset (minutes east of UTC). */
+function localDateLabel(ts: number, tzOffsetMinutes: number) {
+  return new Date(ts + tzOffsetMinutes * 60_000).toISOString().slice(0, 10);
+}
+
+/** Returns ms timestamp of local midnight for a given local date (year/month/day). */
+function localMidnightUtcMs(year: number, month: number, day: number, tzOffsetMinutes: number) {
+  return Date.UTC(year, month, day) - tzOffsetMinutes * 60_000;
+}
+
+/** Computes bucket window aligned to user's local midnight, ending at next local midnight. */
+function computeWindow(days: number, tzOffsetMinutes: number) {
+  const nowLocal = new Date(Date.now() + tzOffsetMinutes * 60_000);
+  const y = nowLocal.getUTCFullYear();
+  const m = nowLocal.getUTCMonth();
+  const d = nowLocal.getUTCDate();
+  // end = next local midnight (so today's partial day is included)
+  const end = localMidnightUtcMs(y, m, d + 1, tzOffsetMinutes);
+  const start = localMidnightUtcMs(y, m, d - days + 1, tzOffsetMinutes);
+  return { start, end };
 }
 
 function sumPoints(points: any[] | undefined, key: "intVal" | "fpVal"): number {
