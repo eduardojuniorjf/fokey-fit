@@ -67,8 +67,13 @@ export const disconnectGoogleFit = createServerFn({ method: "POST" })
 /** Sync Google Fit data (steps, calories, cardio points, weight). */
 export const syncGoogleFit = createServerFn({ method: "POST" })
   .middleware([attachSupabaseAuth, requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((data?: { tzOffsetMinutes?: number }) => data ?? {})
+  .handler(async ({ context, data }) => {
     const { userId } = context;
+    // Default to Brazil (UTC-3) if client did not provide an offset.
+    // JS getTimezoneOffset() returns minutes WEST of UTC, so we negate to get east.
+    const tzOffsetMinutes =
+      typeof data.tzOffsetMinutes === "number" ? data.tzOffsetMinutes : -180;
 
     // Load integration via admin (we own the row, but admin avoids RLS pitfalls server-side)
     const { data: integ, error: integErr } = await supabaseAdmin
@@ -99,10 +104,10 @@ export const syncGoogleFit = createServerFn({ method: "POST" })
         .eq("id", integ.id);
     }
 
-    // Fetch last 7 days of activity + 30 days of weight
+    // Fetch last 7 days of activity + 30 days of weight, aligned to user's local timezone
     const [daily, weights] = await Promise.all([
-      fetchDailySummaries({ accessToken, days: 7 }),
-      fetchWeightSamples({ accessToken, days: 30 }),
+      fetchDailySummaries({ accessToken, days: 7, tzOffsetMinutes }),
+      fetchWeightSamples({ accessToken, days: 30, tzOffsetMinutes }),
     ]);
 
     // Upsert daily activity
