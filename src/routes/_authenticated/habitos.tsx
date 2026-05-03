@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Check, Trash2, ListChecks, Flame } from "lucide-react";
+import { Plus, Check, Trash2, ListChecks, Flame, GlassWater } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -21,6 +21,7 @@ interface Habit {
   daily_target: number;
   unit: string | null;
   active: boolean;
+  icon: string;
 }
 
 interface HabitLog {
@@ -29,6 +30,9 @@ interface HabitLog {
   logged_for: string;
   value: number;
 }
+
+const WATER_ICON = "water";
+const CUP_ML = 350;
 
 function todayISO() {
   const d = new Date();
@@ -39,6 +43,7 @@ function HabitosPage() {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [todayLogs, setTodayLogs] = useState<HabitLog[]>([]);
+  const [weightKg, setWeightKg] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -49,19 +54,54 @@ function HabitosPage() {
 
   const today = todayISO();
 
-  const load = () => {
+  const load = async () => {
     if (!user) return;
     setLoading(true);
-    Promise.all([
+    const [h, l, w] = await Promise.all([
       supabase.from("habits").select("*").eq("active", true).order("created_at", { ascending: true }),
       supabase.from("habit_logs").select("*").eq("logged_for", today),
-    ]).then(([h, l]) => {
-      if (h.error) toast.error(h.error.message); else setHabits((h.data ?? []) as Habit[]);
-      if (l.error) toast.error(l.error.message); else setTodayLogs((l.data ?? []) as HabitLog[]);
-      setLoading(false);
-    });
+      supabase.from("weight_entries").select("weight_kg").order("recorded_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    if (h.error) toast.error(h.error.message);
+    if (l.error) toast.error(l.error.message);
+    const habitsList = ((h.data ?? []) as Habit[]);
+    const wkg = (w.data?.weight_kg as number | undefined) ?? null;
+    setWeightKg(wkg);
+
+    // Auto-create water habit if user has weight and no water habit yet
+    let finalHabits = habitsList;
+    if (wkg && !habitsList.some((x) => x.icon === WATER_ICON)) {
+      const cups = Math.ceil((wkg * 40) / CUP_ML);
+      const { data: created, error: cErr } = await supabase
+        .from("habits")
+        .insert({
+          user_id: user.id,
+          name: "Beber água",
+          icon: WATER_ICON,
+          daily_target: cups,
+          unit: "copos",
+        })
+        .select()
+        .single();
+      if (cErr) toast.error(cErr.message);
+      else if (created) finalHabits = [created as Habit, ...habitsList];
+    } else if (wkg) {
+      // Keep target in sync with current weight
+      const water = habitsList.find((x) => x.icon === WATER_ICON);
+      const cups = Math.ceil((wkg * 40) / CUP_ML);
+      if (water && Number(water.daily_target) !== cups) {
+        await supabase.from("habits").update({ daily_target: cups }).eq("id", water.id);
+        finalHabits = habitsList.map((x) => (x.id === water.id ? { ...x, daily_target: cups } : x));
+      }
+    }
+    setHabits(finalHabits);
+    setTodayLogs((l.data ?? []) as HabitLog[]);
+    setLoading(false);
   };
-  useEffect(load, [user]);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -99,6 +139,29 @@ function HabitosPage() {
     load();
   };
 
+  const addWaterCup = async (habit: Habit) => {
+    if (!user) return;
+    const consumed = todayLogs.filter((l) => l.habit_id === habit.id).length;
+    if (consumed >= habit.daily_target) return;
+    const { error } = await supabase.from("habit_logs").insert({
+      user_id: user.id,
+      habit_id: habit.id,
+      logged_for: today,
+      value: 1,
+    });
+    if (error) return toast.error(error.message);
+    load();
+  };
+
+  const removeWaterCup = async (habit: Habit) => {
+    const logs = todayLogs.filter((l) => l.habit_id === habit.id);
+    const last = logs[logs.length - 1];
+    if (!last) return;
+    const { error } = await supabase.from("habit_logs").delete().eq("id", last.id);
+    if (error) return toast.error(error.message);
+    load();
+  };
+
   const removeHabit = async (id: string) => {
     if (!confirm("Apagar este hábito e todos os registros?")) return;
     const { error } = await supabase.from("habits").delete().eq("id", id);
@@ -106,7 +169,13 @@ function HabitosPage() {
     else { toast.success("Removido."); load(); }
   };
 
-  const completedCount = todayLogs.length;
+  const isHabitDone = (h: Habit) => {
+    if (h.icon === WATER_ICON) {
+      return todayLogs.filter((l) => l.habit_id === h.id).length >= h.daily_target;
+    }
+    return todayLogs.some((l) => l.habit_id === h.id);
+  };
+  const completedCount = habits.filter(isHabitDone).length;
   const total = habits.length;
 
   return (
@@ -129,7 +198,7 @@ function HabitosPage() {
             <form onSubmit={submit} className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="hn">Nome *</Label>
-                <Input id="hn" required placeholder="Ex: Beber 2L de água"
+                <Input id="hn" required placeholder="Ex: Meditar 10 min"
                   value={name} onChange={(e) => setName(e.target.value)} autoFocus />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -173,12 +242,63 @@ function HabitosPage() {
           <CardContent className="py-10 text-center">
             <ListChecks className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Nenhum hábito ainda.</p>
-            <p className="mt-1 text-xs text-muted-foreground">Toque no + para criar.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {weightKg
+                ? "Toque no + para criar."
+                : "Cadastre seu peso em Medidas para liberar o hábito de água."}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
           {habits.map((h) => {
+            if (h.icon === WATER_ICON) {
+              const consumed = todayLogs.filter((l) => l.habit_id === h.id).length;
+              const target = h.daily_target;
+              const ml = consumed * CUP_ML;
+              const targetMl = target * CUP_ML;
+              return (
+                <li key={h.id}>
+                  <Card className={cn("transition-colors", consumed >= target && "border-primary bg-primary/5")}>
+                    <CardContent className="py-4">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <div className="flex-1 overflow-hidden">
+                          <p className="font-semibold">{h.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {ml} / {targetMl} ml · {consumed}/{target} copos de {CUP_ML}ml
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => removeHabit(h.id)}
+                          className="shrink-0 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: target }).map((_, i) => {
+                          const filled = i < consumed;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => (filled ? removeWaterCup(h) : addWaterCup(h))}
+                              aria-label={filled ? "Desmarcar copo" : "Marcar copo"}
+                              className={cn(
+                                "flex h-10 w-10 items-center justify-center rounded-md border-2 transition-all",
+                                filled
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border bg-background text-muted-foreground hover:border-primary",
+                              )}
+                            >
+                              <GlassWater className={cn("h-5 w-5", filled ? "fill-primary/30" : "")} />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            }
             const done = todayLogs.some((l) => l.habit_id === h.id);
             return (
               <li key={h.id}>
