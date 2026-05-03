@@ -22,23 +22,24 @@ function AuthenticatedLayout() {
     }
   }, [loading, user, navigate]);
 
-  // Auto-sync Google Fit on entry (throttled to once per 5 min per user).
+  // Auto-sync Google Fit on every entry/navigation into the authenticated area.
+  // Runs in the background; dashboard listens to "gf:synced" to refresh.
   useEffect(() => {
     if (!user) return;
-    const key = `gf:lastAutoSync:${user.id}`;
-    const last = Number(localStorage.getItem(key) ?? 0);
-    if (Date.now() - last < 5 * 60_000) return;
-    localStorage.setItem(key, String(Date.now()));
+    let cancelled = false;
     (async () => {
       try {
         const s = await statusFn();
-        if (!s?.connected) return;
+        if (cancelled || !s?.connected) return;
         await syncFn({ data: { tzOffsetMinutes: -new Date().getTimezoneOffset() } });
-        window.dispatchEvent(new CustomEvent("gf:synced"));
+        if (!cancelled) window.dispatchEvent(new CustomEvent("gf:synced"));
       } catch (e) {
         console.warn("Auto-sync Google Fit falhou:", e);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [user, syncFn, statusFn]);
 
   if (loading || !user) {
