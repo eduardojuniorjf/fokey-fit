@@ -68,7 +68,7 @@ function PerfilPage() {
   const handleSyncGoogleFit = async () => {
     setGfBusy(true);
     try {
-      const r = await syncGoogleFitFn();
+      const r = await syncGoogleFitFn({ data: { tzOffsetMinutes: -new Date().getTimezoneOffset() } });
       toast.success(`Sincronizado! ${r.activityCount} dia(s) de atividade, ${r.weightCount} peso(s).`);
       await refreshGfStatus();
     } catch (e) {
