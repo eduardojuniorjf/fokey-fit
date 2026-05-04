@@ -1,5 +1,4 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BottomNav } from "@/components/BottomNav";
@@ -13,8 +12,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const syncFn = useServerFn(syncGoogleFit);
-  const statusFn = useServerFn(getGoogleFitStatus);
+  const userId = user?.id;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -25,22 +23,31 @@ function AuthenticatedLayout() {
   // Auto-sync Google Fit on every entry/navigation into the authenticated area.
   // Runs in the background; dashboard listens to "gf:synced" to refresh.
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let cancelled = false;
-    (async () => {
+    const run = async () => {
       try {
-        const s = await statusFn();
+        const s = await getGoogleFitStatus();
         if (cancelled || !s?.connected) return;
-        await syncFn({ data: { tzOffsetMinutes: -new Date().getTimezoneOffset() } });
+        const tz = -new Date().getTimezoneOffset();
+        const res = await syncGoogleFit({ data: { tzOffsetMinutes: tz } });
+        console.log("[gf] auto-sync ok", res);
         if (!cancelled) window.dispatchEvent(new CustomEvent("gf:synced"));
       } catch (e) {
-        console.warn("Auto-sync Google Fit falhou:", e);
+        console.warn("[gf] auto-sync falhou:", e);
       }
-    })();
+    };
+    run();
+    // Re-sync when tab becomes visible again (real-time-ish updates)
+    const onVisible = () => {
+      if (document.visibilityState === "visible") run();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [user, syncFn, statusFn]);
+  }, [userId]);
 
   if (loading || !user) {
     return (
