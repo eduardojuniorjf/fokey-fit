@@ -11,7 +11,7 @@ export interface ActivityRow {
   cardio_points: number;
 }
 
-type Range = "7d" | "15d" | "30d" | "month";
+type Range = "week" | "15d" | "30d" | "month";
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 // Função robusta: extrai a data puramente local, ignorando UTC
@@ -23,7 +23,7 @@ function isoDate(d: Date) {
 }
 
 export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
-  const [range, setRange] = useState<Range>("7d");
+  const [range, setRange] = useState<Range>("week");
   const [monthOffset, setMonthOffset] = useState(0);
 
   // Referência estável de "agora" para todos os cálculos do componente
@@ -74,10 +74,34 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
       return out;
     }
 
-    const daysCount = range === "7d" ? 7 : range === "15d" ? 15 : 30;
+    if (range === "week") {
+      // Semana atual: segunda a domingo
+      const today = new Date(nowReference);
+      today.setHours(0, 0, 0, 0);
+      const dow = today.getDay(); // 0=Dom, 1=Seg, ...
+      const diffToMonday = dow === 0 ? -6 : 1 - dow;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diffToMonday);
+
+      const out: { date: string; passos: number; cardio: number; full: string }[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const iso = isoDate(d);
+        const row = map.get(iso);
+        out.push({
+          date: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+          full: d.toLocaleDateString("pt-BR"),
+          passos: row?.steps ?? 0,
+          cardio: row?.cardio_points ?? 0,
+        });
+      }
+      return out;
+    }
+
+    const daysCount = range === "15d" ? 15 : 30;
     const out: { date: string; passos: number; cardio: number; full: string }[] = [];
 
-    // Criamos uma cópia de hoje e zeramos as horas para garantir precisão no loop
     const today = new Date(nowReference);
     today.setHours(0, 0, 0, 0);
 
@@ -89,10 +113,7 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
       const row = map.get(iso);
 
       out.push({
-        date:
-          daysCount <= 7
-            ? d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
-            : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+        date: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
         full: d.toLocaleDateString("pt-BR"),
         passos: row?.steps ?? 0,
         cardio: row?.cardio_points ?? 0,
@@ -107,7 +128,7 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
   const avgSteps = data.length ? Math.round(totalSteps / data.length) : 0;
 
   const periodLabel: Record<Range, string> = {
-    "7d": "7 dias",
+    week: "Semana",
     "15d": "15 dias",
     "30d": "30 dias",
     month: "Mês",
@@ -144,10 +165,10 @@ export function ActivityChartCard({ activity }: { activity: ActivityRow[] }) {
               className="rounded-md border border-border bg-muted/40 p-0.5"
             >
               <ToggleGroupItem
-                value="7d"
+                value="week"
                 className="h-6 px-2 text-[11px] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
               >
-                7d
+                Semana
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="15d"
