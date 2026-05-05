@@ -141,24 +141,41 @@ function HabitosPage() {
 
   const addWaterCup = async (habit: Habit) => {
     if (!user) return;
-    const consumed = todayLogs.filter((l) => l.habit_id === habit.id).length;
+    const existing = todayLogs.find((l) => l.habit_id === habit.id);
+    const consumed = existing ? Number(existing.value) : 0;
     if (consumed >= habit.daily_target) return;
-    const { error } = await supabase.from("habit_logs").insert({
-      user_id: user.id,
-      habit_id: habit.id,
-      logged_for: today,
-      value: 1,
-    });
-    if (error) return toast.error(error.message);
+    if (existing) {
+      const { error } = await supabase
+        .from("habit_logs")
+        .update({ value: consumed + 1 })
+        .eq("id", existing.id);
+      if (error) return toast.error(error.message);
+    } else {
+      const { error } = await supabase.from("habit_logs").insert({
+        user_id: user.id,
+        habit_id: habit.id,
+        logged_for: today,
+        value: 1,
+      });
+      if (error) return toast.error(error.message);
+    }
     load();
   };
 
   const removeWaterCup = async (habit: Habit) => {
-    const logs = todayLogs.filter((l) => l.habit_id === habit.id);
-    const last = logs[logs.length - 1];
-    if (!last) return;
-    const { error } = await supabase.from("habit_logs").delete().eq("id", last.id);
-    if (error) return toast.error(error.message);
+    const existing = todayLogs.find((l) => l.habit_id === habit.id);
+    if (!existing) return;
+    const consumed = Number(existing.value);
+    if (consumed <= 1) {
+      const { error } = await supabase.from("habit_logs").delete().eq("id", existing.id);
+      if (error) return toast.error(error.message);
+    } else {
+      const { error } = await supabase
+        .from("habit_logs")
+        .update({ value: consumed - 1 })
+        .eq("id", existing.id);
+      if (error) return toast.error(error.message);
+    }
     load();
   };
 
@@ -171,7 +188,8 @@ function HabitosPage() {
 
   const isHabitDone = (h: Habit) => {
     if (h.icon === WATER_ICON) {
-      return todayLogs.filter((l) => l.habit_id === h.id).length >= h.daily_target;
+      const log = todayLogs.find((l) => l.habit_id === h.id);
+      return !!log && Number(log.value) >= h.daily_target;
     }
     return todayLogs.some((l) => l.habit_id === h.id);
   };
@@ -253,7 +271,8 @@ function HabitosPage() {
         <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
           {habits.map((h) => {
             if (h.icon === WATER_ICON) {
-              const consumed = todayLogs.filter((l) => l.habit_id === h.id).length;
+              const log = todayLogs.find((l) => l.habit_id === h.id);
+              const consumed = log ? Number(log.value) : 0;
               const target = h.daily_target;
               const ml = consumed * CUP_ML;
               const targetMl = target * CUP_ML;
