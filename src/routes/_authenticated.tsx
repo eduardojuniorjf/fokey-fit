@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BottomNav } from "@/components/BottomNav";
 import { AppSidebar } from "@/components/AppSidebar";
 import { syncGoogleFit, getGoogleFitStatus } from "@/lib/google-fit/google-fit.functions";
+import { syncStrava, getStravaStatus } from "@/lib/strava/strava.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -26,15 +27,28 @@ function AuthenticatedLayout() {
     if (!userId) return;
     let cancelled = false;
     const run = async () => {
+      // Google Fit
       try {
         const s = await getGoogleFitStatus();
-        if (cancelled || !s?.connected) return;
-        const tz = -new Date().getTimezoneOffset();
-        const res = await syncGoogleFit({ data: { tzOffsetMinutes: tz } });
-        console.log("[gf] auto-sync ok", res);
-        if (!cancelled) window.dispatchEvent(new CustomEvent("gf:synced"));
+        if (!cancelled && s?.connected) {
+          const tz = -new Date().getTimezoneOffset();
+          const res = await syncGoogleFit({ data: { tzOffsetMinutes: tz } });
+          console.log("[gf] auto-sync ok", res);
+          if (!cancelled) window.dispatchEvent(new CustomEvent("gf:synced"));
+        }
       } catch (e) {
         console.warn("[gf] auto-sync falhou:", e);
+      }
+      // Strava
+      try {
+        const s = await getStravaStatus();
+        if (!cancelled && s?.connected) {
+          const res = await syncStrava();
+          console.log("[strava] auto-sync ok", res);
+          if (!cancelled) window.dispatchEvent(new CustomEvent("strava:synced"));
+        }
+      } catch (e) {
+        console.warn("[strava] auto-sync falhou:", e);
       }
     };
     run();

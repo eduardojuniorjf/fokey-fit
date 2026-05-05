@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, User as UserIcon, Activity, RefreshCw, Unplug, Settings } from "lucide-react";
+import { LogOut, User as UserIcon, Activity, RefreshCw, Unplug, Settings, Bike } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -17,6 +17,12 @@ import {
   disconnectGoogleFit,
   syncGoogleFit,
 } from "@/lib/google-fit/google-fit.functions";
+import {
+  startStravaOAuth,
+  getStravaStatus,
+  disconnectStrava,
+  syncStrava,
+} from "@/lib/strava/strava.functions";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: PerfilPage,
@@ -29,6 +35,10 @@ function PerfilPage() {
   const getGoogleFitStatusFn = useServerFn(getGoogleFitStatus);
   const disconnectGoogleFitFn = useServerFn(disconnectGoogleFit);
   const syncGoogleFitFn = useServerFn(syncGoogleFit);
+  const startStravaOAuthFn = useServerFn(startStravaOAuth);
+  const getStravaStatusFn = useServerFn(getStravaStatus);
+  const disconnectStravaFn = useServerFn(disconnectStrava);
+  const syncStravaFn = useServerFn(syncStrava);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bio, setBio] = useState("");
@@ -36,6 +46,8 @@ function PerfilPage() {
   const [saving, setSaving] = useState(false);
   const [gfStatus, setGfStatus] = useState<{ connected: boolean; lastSyncedAt: string | null } | null>(null);
   const [gfBusy, setGfBusy] = useState(false);
+  const [stStatus, setStStatus] = useState<{ connected: boolean; lastSyncedAt: string | null } | null>(null);
+  const [stBusy, setStBusy] = useState(false);
 
   const refreshGfStatus = async () => {
     try {
@@ -46,9 +58,63 @@ function PerfilPage() {
     }
   };
 
+  const refreshStStatus = async () => {
+    try {
+      const s = await getStravaStatusFn();
+      setStStatus(s);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
-    if (user) refreshGfStatus();
+    if (user) {
+      refreshGfStatus();
+      refreshStStatus();
+    }
   }, [user]);
+
+  const handleConnectStrava = async () => {
+    setStBusy(true);
+    try {
+      const result = await startStravaOAuthFn();
+      const url = result?.url;
+      if (typeof url !== "string" || !url.startsWith("https://www.strava.com/")) {
+        throw new Error("Falha ao iniciar conexão com o Strava");
+      }
+      window.location.href = url;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao iniciar conexão");
+      setStBusy(false);
+    }
+  };
+
+  const handleSyncStrava = async () => {
+    setStBusy(true);
+    try {
+      const r = await syncStravaFn();
+      toast.success(`Strava sincronizado! ${r.activityCount} atividade(s).`);
+      await refreshStStatus();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao sincronizar");
+    } finally {
+      setStBusy(false);
+    }
+  };
+
+  const handleDisconnectStrava = async () => {
+    if (!confirm("Desconectar o Strava?")) return;
+    setStBusy(true);
+    try {
+      await disconnectStravaFn();
+      toast.success("Strava desconectado");
+      await refreshStStatus();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao desconectar");
+    } finally {
+      setStBusy(false);
+    }
+  };
 
   const handleConnectGoogleFit = async () => {
     setGfBusy(true);
@@ -204,6 +270,43 @@ function PerfilPage() {
                   Sincronizar
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleDisconnectGoogleFit} disabled={gfBusy}>
+                  <Unplug className="mr-1.5 h-4 w-4" />
+                  Desconectar
+                </Button>
+              </div>
+            ) : null}
+
+            <div className="border-t pt-3" />
+
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-accent/15 p-2 text-accent-foreground">
+                  <Bike className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-medium">Strava</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stStatus?.connected
+                      ? stStatus.lastSyncedAt
+                        ? `Sincronizado em ${new Date(stStatus.lastSyncedAt).toLocaleString("pt-BR")}`
+                        : "Conectado — nunca sincronizado"
+                      : "Importe corridas, pedaladas e outras atividades"}
+                  </p>
+                </div>
+              </div>
+              {!stStatus?.connected ? (
+                <Button size="sm" onClick={handleConnectStrava} disabled={stBusy}>
+                  {stBusy ? "..." : "Conectar"}
+                </Button>
+              ) : null}
+            </div>
+            {stStatus?.connected ? (
+              <div className="flex gap-2">
+                <Button size="sm" variant="default" className="flex-1" onClick={handleSyncStrava} disabled={stBusy}>
+                  <RefreshCw className={`mr-1.5 h-4 w-4 ${stBusy ? "animate-spin" : ""}`} />
+                  Sincronizar
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDisconnectStrava} disabled={stBusy}>
                   <Unplug className="mr-1.5 h-4 w-4" />
                   Desconectar
                 </Button>
