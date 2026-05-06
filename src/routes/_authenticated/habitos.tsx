@@ -86,14 +86,6 @@ function HabitosPage() {
         .single();
       if (cErr) toast.error(cErr.message);
       else if (created) finalHabits = [created as Habit, ...habitsList];
-    } else if (wkg) {
-      // Keep target in sync with current weight
-      const water = habitsList.find((x) => x.icon === WATER_ICON);
-      const cups = Math.ceil((wkg * 40) / CUP_ML);
-      if (water && Number(water.daily_target) !== cups) {
-        await supabase.from("habits").update({ daily_target: cups }).eq("id", water.id);
-        finalHabits = habitsList.map((x) => (x.id === water.id ? { ...x, daily_target: cups } : x));
-      }
     }
     setHabits(finalHabits);
     setTodayLogs((l.data ?? []) as HabitLog[]);
