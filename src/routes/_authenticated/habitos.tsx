@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Check, Trash2, ListChecks, Flame, GlassWater } from "lucide-react";
+import { Plus, Check, Trash2, ListChecks, Flame, GlassWater, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HabitsHistoryCard } from "@/components/HabitsHistoryCard";
