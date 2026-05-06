@@ -218,9 +218,13 @@ export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
                     borderRadius: "8px",
                     fontSize: "12px",
                   }}
-                  labelFormatter={(_, p) => p?.[0]?.payload?.full ?? ""}
-                  formatter={(value: number, _name, props) => {
-                    const p = props?.payload as { done: number; total: number } | undefined;
+                  labelFormatter={(_label: unknown, p: unknown) => {
+                    const arr = p as Array<{ payload?: { full?: string } }> | undefined;
+                    return arr?.[0]?.payload?.full ?? "";
+                  }}
+                  formatter={(value: unknown, _name: unknown, props: unknown) => {
+                    const item = props as { payload?: { done: number; total: number } } | undefined;
+                    const p = item?.payload;
                     return [`${value}% (${p?.done ?? 0}/${p?.total ?? 0})`, "Conclusão"];
                   }}
                 />
