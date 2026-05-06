@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Plus, Check, Trash2, ListChecks, Flame, GlassWater } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { HabitsHistoryCard } from "@/components/HabitsHistoryCard";
 
 export const Route = createFileRoute("/_authenticated/habitos")({
   component: HabitosPage,
@@ -352,6 +353,12 @@ function HabitosPage() {
             );
           })}
         </ul>
+      )}
+
+      {habits.length > 0 && (
+        <div className="mt-6">
+          <HabitsHistoryCard userId={user?.id} />
+        </div>
       )}
     </div>
   );
