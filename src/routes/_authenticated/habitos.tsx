@@ -183,6 +183,23 @@ function HabitosPage() {
     else { toast.success("Removido."); load(); }
   };
 
+  const saveEdit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingHabit) return;
+    const newTarget = Number(editTarget);
+    if (!newTarget || newTarget < 1) return toast.error("Meta inválida");
+    setEditSaving(true);
+    const { error } = await supabase
+      .from("habits")
+      .update({ daily_target: newTarget })
+      .eq("id", editingHabit.id);
+    setEditSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Hábito atualizado!");
+    setEditingHabit(null);
+    load();
+  };
+
   const isHabitDone = (h: Habit) => {
     if (h.icon === WATER_ICON) {
       const log = todayLogs.find((l) => l.habit_id === h.id);
