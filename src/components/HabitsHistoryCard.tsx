@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
+  BarChart,
+  Bar,
   ResponsiveContainer,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  AreaChart,
-  Area,
+  ReferenceLine,
 } from "recharts";
 import { ListChecks } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,17 +18,20 @@ type Range = "week" | "15d" | "30d" | "year";
 
 interface HabitRow {
   id: string;
+  name: string;
   daily_target: number;
+  unit: string | null;
   icon: string;
 }
 
 interface LogRow {
   habit_id: string;
-  logged_for: string; // YYYY-MM-DD
+  logged_for: string;
   value: number;
 }
 
 const WATER_ICON = "water";
+const CUP_ML = 350;
 
 function isoDate(d: Date) {
   const y = d.getFullYear();
@@ -36,18 +40,22 @@ function isoDate(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
+interface HabitsHistoryCardProps {
+  userId: string | undefined;
+  habit: HabitRow;
+}
+
+export function HabitsHistoryCard({ userId, habit }: HabitsHistoryCardProps) {
   const [range, setRange] = useState<Range>("week");
-  const [habits, setHabits] = useState<HabitRow[]>([]);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Date range bounds
+  const isWater = habit.icon === WATER_ICON;
+
   const { startDate, endDate } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const end = new Date(today);
-
     let start: Date;
     if (range === "week") {
       const dow = today.getDay();
@@ -73,59 +81,45 @@ export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
     let cancelled = false;
     const run = async () => {
       setLoading(true);
-      const [h, l] = await Promise.all([
-        supabase.from("habits").select("id,daily_target,icon").eq("active", true),
-        supabase
-          .from("habit_logs")
-          .select("habit_id,logged_for,value")
-          .gte("logged_for", isoDate(startDate))
-          .lte("logged_for", isoDate(endDate)),
-      ]);
+      const { data } = await supabase
+        .from("habit_logs")
+        .select("habit_id,logged_for,value")
+        .eq("habit_id", habit.id)
+        .gte("logged_for", isoDate(startDate))
+        .lte("logged_for", isoDate(endDate));
       if (cancelled) return;
-      setHabits(((h.data ?? []) as HabitRow[]));
-      setLogs(((l.data ?? []) as LogRow[]));
+      setLogs((data ?? []) as LogRow[]);
       setLoading(false);
     };
     run();
     return () => {
       cancelled = true;
     };
-  }, [userId, startDate, endDate]);
+  }, [userId, habit.id, startDate, endDate]);
 
-  // Build day-by-day data: percentage of habits completed
-  const data = useMemo(() => {
-    const habitMap = new Map(habits.map((h) => [h.id, h]));
-    // group logs by date
-    const byDate = new Map<string, LogRow[]>();
+  // Build day-by-day data
+  const { data, unitLabel, targetValue } = useMemo(() => {
+    const byDate = new Map<string, number>();
     for (const lg of logs) {
-      const arr = byDate.get(lg.logged_for) ?? [];
-      arr.push(lg);
-      byDate.set(lg.logged_for, arr);
+      byDate.set(lg.logged_for, (byDate.get(lg.logged_for) ?? 0) + Number(lg.value));
     }
 
-    const totalHabits = habits.length;
-    const days: { date: string; full: string; pct: number; done: number; total: number }[] = [];
+    let unit: string;
+    let target: number;
+    if (isWater) {
+      unit = "L";
+      target = (Number(habit.daily_target) * CUP_ML) / 1000;
+    } else {
+      unit = habit.unit ?? "";
+      target = Number(habit.daily_target) || 1;
+    }
 
+    const days: { date: string; full: string; valor: number; meta: number }[] = [];
     const cursor = new Date(startDate);
     while (cursor <= endDate) {
       const iso = isoDate(cursor);
-      const dayLogs = byDate.get(iso) ?? [];
-      let done = 0;
-      // count completion per habit
-      const perHabit = new Map<string, number>();
-      for (const lg of dayLogs) {
-        perHabit.set(lg.habit_id, (perHabit.get(lg.habit_id) ?? 0) + Number(lg.value));
-      }
-      for (const [hid, val] of perHabit) {
-        const h = habitMap.get(hid);
-        if (!h) continue;
-        if (h.icon === WATER_ICON) {
-          if (val >= Number(h.daily_target)) done += 1;
-        } else {
-          done += 1;
-        }
-      }
-      const pct = totalHabits > 0 ? Math.round((done / totalHabits) * 100) : 0;
+      const raw = byDate.get(iso) ?? 0;
+      const valor = isWater ? Number(((raw * CUP_ML) / 1000).toFixed(2)) : raw;
       const label =
         range === "week"
           ? cursor.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")
@@ -135,19 +129,23 @@ export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
       days.push({
         date: label,
         full: cursor.toLocaleDateString("pt-BR"),
-        pct,
-        done,
-        total: totalHabits,
+        valor,
+        meta: target,
       });
       cursor.setDate(cursor.getDate() + 1);
     }
-    return days;
-  }, [habits, logs, startDate, endDate, range]);
+
+    return { data: days, unitLabel: unit, targetValue: target };
+  }, [logs, startDate, endDate, range, isWater, habit.daily_target, habit.unit]);
 
   const totalDays = data.length;
-  const fullDays = data.filter((d) => d.total > 0 && d.done === d.total).length;
-  const avgPct = totalDays > 0 ? Math.round(data.reduce((s, d) => s + d.pct, 0) / totalDays) : 0;
-  const activeDays = data.filter((d) => d.done > 0).length;
+  const total = data.reduce((s, d) => s + d.valor, 0);
+  const activeDays = data.filter((d) => d.valor > 0).length;
+  const fullDays = data.filter((d) => d.valor >= targetValue && targetValue > 0).length;
+  const avg = totalDays > 0 ? total / totalDays : 0;
+
+  const fmt = (v: number) =>
+    isWater ? `${v.toFixed(1)} L` : `${Number.isInteger(v) ? v : v.toFixed(1)}${unitLabel ? ` ${unitLabel}` : ""}`;
 
   const periodLabel: Record<Range, string> = {
     week: "Semana",
@@ -162,7 +160,7 @@ export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <ListChecks className="h-4 w-4 text-primary" />
-            Histórico de hábitos — {periodLabel[range]}
+            {habit.name} — {periodLabel[range]}
           </CardTitle>
           <ToggleGroup
             type="single"
@@ -188,8 +186,8 @@ export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
       </CardHeader>
       <CardContent>
         <div className="mb-3 grid grid-cols-3 gap-2">
-          <Mini label="Conclusão média" value={`${avgPct}%`} />
-          <Mini label="Dias 100%" value={`${fullDays}/${totalDays}`} />
+          <Mini label="Total" value={fmt(total)} />
+          <Mini label="Dias na meta" value={`${fullDays}/${totalDays}`} />
           <Mini label="Dias ativos" value={`${activeDays}/${totalDays}`} />
         </div>
         <div className="h-56 w-full">
@@ -197,20 +195,14 @@ export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
             <div className="h-full w-full animate-pulse rounded-md bg-muted" />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="habitsFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
-                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <BarChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 10 }}
                   interval={data.length > 15 ? Math.floor(data.length / 10) : 0}
                 />
-                <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{
                     background: "var(--card)",
@@ -222,25 +214,24 @@ export function HabitsHistoryCard({ userId }: { userId: string | undefined }) {
                     const arr = p as Array<{ payload?: { full?: string } }> | undefined;
                     return arr?.[0]?.payload?.full ?? "";
                   }}
-                  formatter={(value: unknown, _name: unknown, props: unknown) => {
-                    const item = props as { payload?: { done: number; total: number } } | undefined;
-                    const p = item?.payload;
-                    return [`${value}% (${p?.done ?? 0}/${p?.total ?? 0})`, "Conclusão"];
-                  }}
+                  formatter={(value: unknown) => [fmt(Number(value)), isWater ? "Consumo" : "Valor"]}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="pct"
-                  stroke="var(--primary)"
-                  strokeWidth={2}
-                  fill="url(#habitsFill)"
-                />
-              </AreaChart>
+                {targetValue > 0 && (
+                  <ReferenceLine
+                    y={targetValue}
+                    stroke="var(--accent)"
+                    strokeDasharray="4 4"
+                    label={{ value: "Meta", position: "right", fontSize: 10, fill: "var(--muted-foreground)" }}
+                  />
+                )}
+                <Bar dataKey="valor" name={isWater ? "Litros" : "Valor"} fill="var(--primary)" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           )}
         </div>
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          Média: <span className="font-medium text-foreground">{avgPct}%</span> de conclusão por dia
+          Média: <span className="font-medium text-foreground">{fmt(avg)}</span> / dia · Meta diária:{" "}
+          <span className="font-medium text-foreground">{fmt(targetValue)}</span>
         </p>
       </CardContent>
     </Card>
