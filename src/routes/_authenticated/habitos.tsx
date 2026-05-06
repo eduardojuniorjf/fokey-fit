@@ -53,6 +53,10 @@ function HabitosPage() {
   const [target, setTarget] = useState("1");
   const [unit, setUnit] = useState("");
 
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [editTarget, setEditTarget] = useState("1");
+  const [editSaving, setEditSaving] = useState(false);
+
   const today = todayISO();
 
   const load = async () => {
