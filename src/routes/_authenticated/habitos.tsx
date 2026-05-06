@@ -383,6 +383,40 @@ function HabitosPage() {
           ))}
         </div>
       )}
+
+      <Sheet open={!!editingHabit} onOpenChange={(o) => !o && setEditingHabit(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Editar {editingHabit?.name}</SheetTitle>
+          </SheetHeader>
+          {editingHabit && (
+            <form onSubmit={saveEdit} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="et">
+                  Meta diária {editingHabit.icon === WATER_ICON ? `(copos de ${CUP_ML}ml)` : editingHabit.unit ? `(${editingHabit.unit})` : ""}
+                </Label>
+                <Input
+                  id="et"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={editTarget}
+                  onChange={(e) => setEditTarget(e.target.value)}
+                  autoFocus
+                />
+                {editingHabit.icon === WATER_ICON && Number(editTarget) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Total: {Number(editTarget) * CUP_ML} ml ({((Number(editTarget) * CUP_ML) / 1000).toFixed(2)} L)
+                  </p>
+                )}
+              </div>
+              <Button type="submit" className="w-full" disabled={editSaving}>
+                {editSaving ? "Salvando..." : "Salvar alterações"}
+              </Button>
+            </form>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
