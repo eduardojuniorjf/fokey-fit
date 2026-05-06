@@ -288,10 +288,6 @@ function HabitosPage() {
                             {ml} / {targetMl} ml · {consumed}/{target} copos de {CUP_ML}ml
                           </p>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeHabit(h.id)}
-                          className="shrink-0 text-muted-foreground hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {Array.from({ length: target }).map((_, i) => {
