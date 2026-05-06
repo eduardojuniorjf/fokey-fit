@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Check, Trash2, ListChecks, Flame, GlassWater } from "lucide-react";
+import { Plus, Check, Trash2, ListChecks, Flame, GlassWater, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HabitsHistoryCard } from "@/components/HabitsHistoryCard";
@@ -53,6 +53,10 @@ function HabitosPage() {
   const [target, setTarget] = useState("1");
   const [unit, setUnit] = useState("");
 
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [editTarget, setEditTarget] = useState("1");
+  const [editSaving, setEditSaving] = useState(false);
+
   const today = todayISO();
 
   const load = async () => {
@@ -86,14 +90,6 @@ function HabitosPage() {
         .single();
       if (cErr) toast.error(cErr.message);
       else if (created) finalHabits = [created as Habit, ...habitsList];
-    } else if (wkg) {
-      // Keep target in sync with current weight
-      const water = habitsList.find((x) => x.icon === WATER_ICON);
-      const cups = Math.ceil((wkg * 40) / CUP_ML);
-      if (water && Number(water.daily_target) !== cups) {
-        await supabase.from("habits").update({ daily_target: cups }).eq("id", water.id);
-        finalHabits = habitsList.map((x) => (x.id === water.id ? { ...x, daily_target: cups } : x));
-      }
     }
     setHabits(finalHabits);
     setTodayLogs((l.data ?? []) as HabitLog[]);
@@ -185,6 +181,23 @@ function HabitosPage() {
     const { error } = await supabase.from("habits").delete().eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Removido."); load(); }
+  };
+
+  const saveEdit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingHabit) return;
+    const newTarget = Number(editTarget);
+    if (!newTarget || newTarget < 1) return toast.error("Meta inválida");
+    setEditSaving(true);
+    const { error } = await supabase
+      .from("habits")
+      .update({ daily_target: newTarget })
+      .eq("id", editingHabit.id);
+    setEditSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Hábito atualizado!");
+    setEditingHabit(null);
+    load();
   };
 
   const isHabitDone = (h: Habit) => {
@@ -288,6 +301,18 @@ function HabitosPage() {
                             {ml} / {targetMl} ml · {consumed}/{target} copos de {CUP_ML}ml
                           </p>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingHabit(h);
+                            setEditTarget(String(h.daily_target));
+                          }}
+                          className="shrink-0 text-muted-foreground hover:text-primary"
+                          aria-label="Editar hábito"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {Array.from({ length: target }).map((_, i) => {
@@ -358,6 +383,40 @@ function HabitosPage() {
           ))}
         </div>
       )}
+
+      <Sheet open={!!editingHabit} onOpenChange={(o) => !o && setEditingHabit(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Editar {editingHabit?.name}</SheetTitle>
+          </SheetHeader>
+          {editingHabit && (
+            <form onSubmit={saveEdit} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="et">
+                  Meta diária {editingHabit.icon === WATER_ICON ? `(copos de ${CUP_ML}ml)` : editingHabit.unit ? `(${editingHabit.unit})` : ""}
+                </Label>
+                <Input
+                  id="et"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={editTarget}
+                  onChange={(e) => setEditTarget(e.target.value)}
+                  autoFocus
+                />
+                {editingHabit.icon === WATER_ICON && Number(editTarget) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Total: {Number(editTarget) * CUP_ML} ml ({((Number(editTarget) * CUP_ML) / 1000).toFixed(2)} L)
+                  </p>
+                )}
+              </div>
+              <Button type="submit" className="w-full" disabled={editSaving}>
+                {editSaving ? "Salvando..." : "Salvar alterações"}
+              </Button>
+            </form>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
