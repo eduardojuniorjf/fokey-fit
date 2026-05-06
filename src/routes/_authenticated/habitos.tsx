@@ -356,8 +356,10 @@ function HabitosPage() {
       )}
 
       {habits.length > 0 && (
-        <div className="mt-6">
-          <HabitsHistoryCard userId={user?.id} />
+        <div className="mt-6 space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+          {habits.map((h) => (
+            <HabitsHistoryCard key={h.id} userId={user?.id} habit={h} />
+          ))}
         </div>
       )}
     </div>
