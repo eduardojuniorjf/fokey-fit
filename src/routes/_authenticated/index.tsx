@@ -283,22 +283,22 @@ function DashboardPage() {
         {(showM("kpi-steps") || showM("kpi-cardio") || showM("kpi-energy") || showM("kpi-weight")) && (
           <div className="grid grid-cols-2 gap-3">
             {showM("kpi-steps") && (
-              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+              <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
                 sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
             )}
             {showM("kpi-cardio") && (
-              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+              <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
                 sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
             )}
             {showM("kpi-energy") && (
-              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+              <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
                 value={`${todayAct?.energy_kcal ?? 0} kcal`}
                 sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
             )}
             {showM("kpi-weight") && (
-              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+              <KpiCard to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso atual"
                 value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
                 sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
                 accent={bmiCat?.tone} />
@@ -390,22 +390,22 @@ function DashboardPage() {
         {(showD("kpi-steps") || showD("kpi-cardio") || showD("kpi-energy") || showD("kpi-weight")) && (
           <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
             {showD("kpi-steps") && (
-              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+              <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
                 sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
             )}
             {showD("kpi-cardio") && (
-              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+              <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
                 sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
             )}
             {showD("kpi-energy") && (
-              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+              <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
                 value={`${todayAct?.energy_kcal ?? 0} kcal`}
                 sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
             )}
             {showD("kpi-weight") && (
-              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+              <KpiCard to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso atual"
                 value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
                 sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
                 accent={bmiCat?.tone} />
