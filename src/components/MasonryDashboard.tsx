@@ -135,29 +135,27 @@ function SortableItem({
     opacity: isDragging || isOverlay ? 0 : 1,
   };
 
-  const handle = (
-    <button
-      type="button"
-      {...attributes}
-      {...listeners}
-      aria-label="Reordenar card"
-      onClick={(e) => e.preventDefault()}
-      className="absolute right-2 top-2 z-20 flex h-7 w-7 cursor-grab items-center justify-center rounded-md bg-card/80 text-muted-foreground opacity-0 backdrop-blur transition hover:bg-muted hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
-    >
-      <GripVertical className="h-4 w-4" />
-    </button>
-  );
-
   return (
     <div ref={setNodeRef} style={style} className="group relative">
-      {handle}
-      {to ? (
-        <Link to={to} className="block transition-transform hover:scale-[1.005]">
-          {children}
-        </Link>
-      ) : (
-        children
+      {to && (
+        <Link
+          to={to as never}
+          aria-label="Abrir"
+          className="absolute inset-0 z-10 rounded-xl focus-visible:ring-2 focus-visible:ring-primary"
+        />
       )}
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="Reordenar card"
+        className="absolute right-2 top-2 z-20 flex h-7 w-7 cursor-grab items-center justify-center rounded-md bg-card/80 text-muted-foreground opacity-0 backdrop-blur transition hover:bg-muted hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className={to ? "transition-transform group-hover:scale-[1.005]" : undefined}>
+        {children}
+      </div>
     </div>
   );
 }
