@@ -272,10 +272,15 @@ function HabitosPage() {
     load();
   };
 
+  const weekExerciseTotal = weekExerciseLogs.reduce((s, l) => s + Number(l.value || 0), 0);
+
   const isHabitDone = (h: Habit) => {
-    if (h.icon === WATER_ICON || h.icon === EXERCISE_ICON) {
+    if (h.icon === WATER_ICON) {
       const log = todayLogs.find((l) => l.habit_id === h.id);
       return !!log && Number(log.value) >= h.daily_target;
+    }
+    if (h.icon === EXERCISE_ICON) {
+      return weekExerciseTotal >= EXERCISE_TARGET_MIN;
     }
     return todayLogs.some((l) => l.habit_id === h.id);
   };
