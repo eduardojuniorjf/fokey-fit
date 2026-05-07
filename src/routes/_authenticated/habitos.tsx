@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Check, Trash2, ListChecks, Flame, GlassWater, Pencil } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Check, Trash2, ListChecks, Flame, GlassWater, Pencil, Dumbbell, Info, PartyPopper, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HabitsHistoryCard } from "@/components/HabitsHistoryCard";
@@ -33,7 +34,10 @@ interface HabitLog {
 }
 
 const WATER_ICON = "water";
+const EXERCISE_ICON = "exercise";
 const CUP_ML = 350;
+const EXERCISE_TARGET_MIN = 150;
+const EXERCISE_INCREMENTS = [10, 15, 30];
 
 function todayISO() {
   const d = new Date();
