@@ -449,7 +449,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "insight", node: (
+            { id: "insight", to: "/atividade", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -468,7 +468,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "habits", node: (
+            { id: "habits", to: "/habitos", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2 flex-row items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -499,7 +499,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "weight-chart", node: (
+            { id: "weight-chart", to: "/medidas", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Evolução do peso</CardTitle>
@@ -527,7 +527,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "month", node: (
+            { id: "month", to: "/historico", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">
@@ -547,8 +547,8 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "activity-7d", node: <ActivityChartCard activity={activity} /> },
-            { id: "calories", node: (
+            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={activity} /> },
+            { id: "calories", to: "/medidas", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Calorias — últimos 30 dias</CardTitle>
