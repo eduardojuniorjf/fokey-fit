@@ -115,6 +115,29 @@ function HabitosPage() {
     }
     setHabits(finalHabits);
     setTodayLogs((l.data ?? []) as HabitLog[]);
+
+    // Fetch weekly exercise logs (Mon-Sun)
+    const exHabit = finalHabits.find((x) => x.icon === EXERCISE_ICON);
+    if (exHabit) {
+      const now = new Date();
+      const dow = now.getDay();
+      const diffToMonday = dow === 0 ? -6 : 1 - dow;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diffToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const { data: weekData } = await supabase
+        .from("habit_logs")
+        .select("*")
+        .eq("habit_id", exHabit.id)
+        .gte("logged_for", iso(monday))
+        .lte("logged_for", iso(sunday));
+      setWeekExerciseLogs((weekData ?? []) as HabitLog[]);
+    } else {
+      setWeekExerciseLogs([]);
+    }
+
     setLoading(false);
   };
   useEffect(() => {
