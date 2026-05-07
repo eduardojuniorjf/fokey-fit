@@ -221,6 +221,33 @@ function HabitosPage() {
     load();
   };
 
+  const addExerciseMin = async (habit: Habit, minutes: number) => {
+    if (!user) return;
+    const existing = todayLogs.find((l) => l.habit_id === habit.id);
+    if (existing) {
+      const next = Math.max(0, Number(existing.value) + minutes);
+      if (next === 0) {
+        const { error } = await supabase.from("habit_logs").delete().eq("id", existing.id);
+        if (error) return toast.error(error.message);
+      } else {
+        const { error } = await supabase
+          .from("habit_logs")
+          .update({ value: next })
+          .eq("id", existing.id);
+        if (error) return toast.error(error.message);
+      }
+    } else if (minutes > 0) {
+      const { error } = await supabase.from("habit_logs").insert({
+        user_id: user.id,
+        habit_id: habit.id,
+        logged_for: today,
+        value: minutes,
+      });
+      if (error) return toast.error(error.message);
+    }
+    load();
+  };
+
   const removeHabit = async (id: string) => {
     if (!confirm("Apagar este hábito e todos os registros?")) return;
     const { error } = await supabase.from("habits").delete().eq("id", id);
