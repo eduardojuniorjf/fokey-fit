@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Check, Trash2, ListChecks, Flame, GlassWater, Pencil } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Check, Trash2, ListChecks, Flame, GlassWater, Pencil, Dumbbell, Info, PartyPopper, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HabitsHistoryCard } from "@/components/HabitsHistoryCard";
@@ -33,7 +34,10 @@ interface HabitLog {
 }
 
 const WATER_ICON = "water";
+const EXERCISE_ICON = "exercise";
 const CUP_ML = 350;
+const EXERCISE_TARGET_MIN = 150;
+const EXERCISE_INCREMENTS = [10, 15, 30];
 
 function todayISO() {
   const d = new Date();
@@ -44,6 +48,7 @@ function HabitosPage() {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [todayLogs, setTodayLogs] = useState<HabitLog[]>([]);
+  const [weekExerciseLogs, setWeekExerciseLogs] = useState<HabitLog[]>([]);
   const [weightKg, setWeightKg] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -91,8 +96,48 @@ function HabitosPage() {
       if (cErr) toast.error(cErr.message);
       else if (created) finalHabits = [created as Habit, ...habitsList];
     }
+
+    // Auto-create exercise habit (always present, default)
+    if (!finalHabits.some((x) => x.icon === EXERCISE_ICON)) {
+      const { data: created, error: eErr } = await supabase
+        .from("habits")
+        .insert({
+          user_id: user.id,
+          name: "Exercício físico",
+          icon: EXERCISE_ICON,
+          daily_target: EXERCISE_TARGET_MIN,
+          unit: "min",
+        })
+        .select()
+        .single();
+      if (eErr) toast.error(eErr.message);
+      else if (created) finalHabits = [...finalHabits, created as Habit];
+    }
     setHabits(finalHabits);
     setTodayLogs((l.data ?? []) as HabitLog[]);
+
+    // Fetch weekly exercise logs (Mon-Sun)
+    const exHabit = finalHabits.find((x) => x.icon === EXERCISE_ICON);
+    if (exHabit) {
+      const now = new Date();
+      const dow = now.getDay();
+      const diffToMonday = dow === 0 ? -6 : 1 - dow;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diffToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const { data: weekData } = await supabase
+        .from("habit_logs")
+        .select("*")
+        .eq("habit_id", exHabit.id)
+        .gte("logged_for", iso(monday))
+        .lte("logged_for", iso(sunday));
+      setWeekExerciseLogs((weekData ?? []) as HabitLog[]);
+    } else {
+      setWeekExerciseLogs([]);
+    }
+
     setLoading(false);
   };
   useEffect(() => {
@@ -176,6 +221,33 @@ function HabitosPage() {
     load();
   };
 
+  const addExerciseMin = async (habit: Habit, minutes: number) => {
+    if (!user) return;
+    const existing = todayLogs.find((l) => l.habit_id === habit.id);
+    if (existing) {
+      const next = Math.max(0, Number(existing.value) + minutes);
+      if (next === 0) {
+        const { error } = await supabase.from("habit_logs").delete().eq("id", existing.id);
+        if (error) return toast.error(error.message);
+      } else {
+        const { error } = await supabase
+          .from("habit_logs")
+          .update({ value: next })
+          .eq("id", existing.id);
+        if (error) return toast.error(error.message);
+      }
+    } else if (minutes > 0) {
+      const { error } = await supabase.from("habit_logs").insert({
+        user_id: user.id,
+        habit_id: habit.id,
+        logged_for: today,
+        value: minutes,
+      });
+      if (error) return toast.error(error.message);
+    }
+    load();
+  };
+
   const removeHabit = async (id: string) => {
     if (!confirm("Apagar este hábito e todos os registros?")) return;
     const { error } = await supabase.from("habits").delete().eq("id", id);
@@ -200,10 +272,15 @@ function HabitosPage() {
     load();
   };
 
+  const weekExerciseTotal = weekExerciseLogs.reduce((s, l) => s + Number(l.value || 0), 0);
+
   const isHabitDone = (h: Habit) => {
     if (h.icon === WATER_ICON) {
       const log = todayLogs.find((l) => l.habit_id === h.id);
       return !!log && Number(log.value) >= h.daily_target;
+    }
+    if (h.icon === EXERCISE_ICON) {
+      return weekExerciseTotal >= EXERCISE_TARGET_MIN;
     }
     return todayLogs.some((l) => l.habit_id === h.id);
   };
@@ -334,6 +411,108 @@ function HabitosPage() {
                             </button>
                           );
                         })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            }
+            if (h.icon === EXERCISE_ICON) {
+              const todayLog = todayLogs.find((l) => l.habit_id === h.id);
+              const todayMin = todayLog ? Number(todayLog.value) : 0;
+              const weekTotal = weekExerciseTotal;
+              const goalReached = weekTotal >= EXERCISE_TARGET_MIN;
+              const pct = Math.min(100, (weekTotal / EXERCISE_TARGET_MIN) * 100);
+              return (
+                <li key={h.id} className="lg:col-span-2 xl:col-span-3">
+                  <Card className={cn("transition-colors", goalReached && "border-emerald-500 bg-emerald-500/5")}>
+                    <CardContent className="py-4">
+                      <div className="mb-3 flex items-start justify-between gap-2">
+                        <div className="flex flex-1 items-center gap-2 overflow-hidden">
+                          <div className={cn(
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                            goalReached ? "bg-emerald-500/15 text-emerald-600" : "bg-primary/10 text-primary",
+                          )}>
+                            {goalReached ? <PartyPopper className="h-5 w-5" /> : <Dumbbell className="h-5 w-5" />}
+                          </div>
+                          <div className="overflow-hidden">
+                            <p className="flex items-center gap-1.5 font-semibold">
+                              {h.name}
+                              <TooltipProvider delayDuration={150}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button type="button" aria-label="Sobre a recomendação">
+                                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                    A OMS recomenda <strong>150 a 300 minutos</strong> de atividade aeróbica
+                                    moderada por semana (ou 75–150 min de intensa). 150 min é o mínimo.
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Meta semanal · hoje +{todayMin} min
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mb-2 flex items-baseline justify-between">
+                        <p className={cn(
+                          "text-2xl font-bold tabular-nums",
+                          goalReached ? "text-emerald-600" : "text-primary",
+                        )}>
+                          {weekTotal} <span className="text-base font-medium text-muted-foreground">/ {EXERCISE_TARGET_MIN} min</span>
+                        </p>
+                        {goalReached && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
+                            <Check className="h-3 w-3" /> Meta atingida
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all",
+                            goalReached ? "bg-emerald-500" : "bg-primary",
+                          )}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        OMS recomenda 150–300 min/semana de atividade moderada.
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">Adicionar hoje:</span>
+                        {EXERCISE_INCREMENTS.map((m) => (
+                          <Button
+                            key={m}
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => addExerciseMin(h, m)}
+                            className="h-7 px-2 text-xs"
+                          >
+                            +{m} min
+                          </Button>
+                        ))}
+                        {todayMin > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addExerciseMin(h, -10)}
+                            className="h-7 px-2 text-xs text-muted-foreground"
+                            aria-label="Remover 10 min"
+                          >
+                            <Minus className="h-3 w-3" /> 10
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

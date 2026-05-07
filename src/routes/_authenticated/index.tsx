@@ -283,22 +283,22 @@ function DashboardPage() {
         {(showM("kpi-steps") || showM("kpi-cardio") || showM("kpi-energy") || showM("kpi-weight")) && (
           <div className="grid grid-cols-2 gap-3">
             {showM("kpi-steps") && (
-              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+              <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
                 sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
             )}
             {showM("kpi-cardio") && (
-              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+              <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
                 sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
             )}
             {showM("kpi-energy") && (
-              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+              <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
                 value={`${todayAct?.energy_kcal ?? 0} kcal`}
                 sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
             )}
             {showM("kpi-weight") && (
-              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+              <KpiCard to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso atual"
                 value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
                 sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
                 accent={bmiCat?.tone} />
@@ -307,29 +307,33 @@ function DashboardPage() {
         )}
 
         {showM("insight") && (
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm leading-relaxed">{insight}</p>
-              <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
-                <Award className="h-4 w-4 text-primary" />
-                <p className="text-xs">
-                  <span className="font-semibold text-primary">{streak}</span>{" "}
-                  {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <Link to="/atividade" className="block">
+            <Card className="border-0 shadow-md transition-shadow hover:shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm leading-relaxed">{insight}</p>
+                <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
+                  <Award className="h-4 w-4 text-primary" />
+                  <p className="text-xs">
+                    <span className="font-semibold text-primary">{streak}</span>{" "}
+                    {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
         {showM("month") && (
-          <MonthPanel
-            monthMax={monthMax} monthMin={monthMin} monthAvg={monthAvg} monthLossPct={monthLossPct} now={now}
-          />
+          <Link to="/historico" className="block">
+            <MonthPanel
+              monthMax={monthMax} monthMin={monthMin} monthAvg={monthAvg} monthLossPct={monthLossPct} now={now}
+            />
+          </Link>
         )}
 
         {showM("quick-actions") && (
@@ -345,43 +349,49 @@ function DashboardPage() {
         )}
 
         {showM("habits") && (
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-2 flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
-              </CardTitle>
-              <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
-            </CardHeader>
-            <CardContent>
-              {habits.length === 0 ? (
-                <Link to="/habitos" className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary">
-                  Crie seus primeiros hábitos
-                </Link>
-              ) : (
-                <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
-                  {habitProgress.map(({ habit, total, pct }) => (
-                    <li key={habit.id}>
-                      <div className="mb-1 flex items-center justify-between text-xs">
-                        <span className="font-medium truncate">{habit.name}</span>
-                        <span className="text-muted-foreground tabular-nums">
-                          {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
-                        </span>
-                      </div>
-                      <Progress value={pct} className="h-1.5" />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <Link to="/habitos" className="block">
+            <Card className="border-0 shadow-md transition-shadow hover:shadow-lg">
+              <CardHeader className="pb-2 flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
+                </CardTitle>
+                <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
+              </CardHeader>
+              <CardContent>
+                {habits.length === 0 ? (
+                  <div className="rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                    Crie seus primeiros hábitos
+                  </div>
+                ) : (
+                  <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
+                    {habitProgress.map(({ habit, total, pct }) => (
+                      <li key={habit.id}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="font-medium truncate">{habit.name}</span>
+                          <span className="text-muted-foreground tabular-nums">
+                            {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
+                          </span>
+                        </div>
+                        <Progress value={pct} className="h-1.5" />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
-        {showM("weight-chart") && <WeightChart loading={loading} data={weightChartData} />}
+        {showM("weight-chart") && (
+          <Link to="/medidas" className="block"><WeightChart loading={loading} data={weightChartData} /></Link>
+        )}
 
-        {showM("activity-7d") && <ActivityChartCard activity={activity} />}
+        {showM("activity-7d") && (
+          <Link to="/atividade" className="block"><ActivityChartCard activity={activity} /></Link>
+        )}
 
         {showM("calories") && calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) && (
-          <CalChart data={calChartData} />
+          <Link to="/medidas" className="block"><CalChart data={calChartData} /></Link>
         )}
       </div>
 
@@ -390,22 +400,22 @@ function DashboardPage() {
         {(showD("kpi-steps") || showD("kpi-cardio") || showD("kpi-energy") || showD("kpi-weight")) && (
           <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
             {showD("kpi-steps") && (
-              <KpiCard icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+              <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
                 sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
             )}
             {showD("kpi-cardio") && (
-              <KpiCard icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+              <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
                 sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
             )}
             {showD("kpi-energy") && (
-              <KpiCard icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+              <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
                 value={`${todayAct?.energy_kcal ?? 0} kcal`}
                 sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
             )}
             {showD("kpi-weight") && (
-              <KpiCard icon={<Scale className="h-5 w-5" />} label="Peso atual"
+              <KpiCard to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso atual"
                 value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
                 sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
                 accent={bmiCat?.tone} />
@@ -415,7 +425,7 @@ function DashboardPage() {
 
         <MasonryDashboard
           widgets={[
-            { id: "goal", node: (
+            { id: "goal", to: "/medidas", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -449,7 +459,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "insight", node: (
+            { id: "insight", to: "/atividade", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -468,7 +478,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "habits", node: (
+            { id: "habits", to: "/habitos", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2 flex-row items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -499,7 +509,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "weight-chart", node: (
+            { id: "weight-chart", to: "/medidas", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Evolução do peso</CardTitle>
@@ -527,7 +537,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "month", node: (
+            { id: "month", to: "/historico", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">
@@ -547,8 +557,8 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             )},
-            { id: "activity-7d", node: <ActivityChartCard activity={activity} /> },
-            { id: "calories", node: (
+            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={activity} /> },
+            { id: "calories", to: "/medidas", node: (
               <Card className="border-0 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Calorias — últimos 30 dias</CardTitle>
@@ -623,13 +633,13 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 }
 
 function KpiCard({
-  icon, label, value, sub, progress, accent, className,
+  icon, label, value, sub, progress, accent, className, to,
 }: {
   icon: React.ReactNode; label: string; value: string; sub?: string;
-  progress?: number; accent?: string; className?: string;
+  progress?: number; accent?: string; className?: string; to?: "/atividade" | "/medidas" | "/habitos" | "/historico";
 }) {
-  return (
-    <Card className={`border-0 shadow-md ${className ?? ""}`}>
+  const card = (
+    <Card className={`border-0 shadow-md transition-shadow ${to ? "hover:shadow-lg" : ""} ${className ?? ""}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -643,6 +653,7 @@ function KpiCard({
       </CardContent>
     </Card>
   );
+  return to ? <Link to={to} className="block">{card}</Link> : card;
 }
 
 function QuickAction({ to, icon, label }: { to: "/atividade" | "/medidas" | "/habitos" | "/historico"; icon: React.ReactNode; label: string }) {
