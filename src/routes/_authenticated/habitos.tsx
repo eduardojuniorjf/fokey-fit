@@ -273,7 +273,7 @@ function HabitosPage() {
   };
 
   const isHabitDone = (h: Habit) => {
-    if (h.icon === WATER_ICON) {
+    if (h.icon === WATER_ICON || h.icon === EXERCISE_ICON) {
       const log = todayLogs.find((l) => l.habit_id === h.id);
       return !!log && Number(log.value) >= h.daily_target;
     }
