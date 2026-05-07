@@ -95,6 +95,23 @@ function HabitosPage() {
       if (cErr) toast.error(cErr.message);
       else if (created) finalHabits = [created as Habit, ...habitsList];
     }
+
+    // Auto-create exercise habit (always present, default)
+    if (!finalHabits.some((x) => x.icon === EXERCISE_ICON)) {
+      const { data: created, error: eErr } = await supabase
+        .from("habits")
+        .insert({
+          user_id: user.id,
+          name: "Exercício físico",
+          icon: EXERCISE_ICON,
+          daily_target: EXERCISE_TARGET_MIN,
+          unit: "min",
+        })
+        .select()
+        .single();
+      if (eErr) toast.error(eErr.message);
+      else if (created) finalHabits = [...finalHabits, created as Habit];
+    }
     setHabits(finalHabits);
     setTodayLogs((l.data ?? []) as HabitLog[]);
     setLoading(false);
