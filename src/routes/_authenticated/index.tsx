@@ -329,9 +329,11 @@ function DashboardPage() {
         )}
 
         {showM("month") && (
-          <MonthPanel
-            monthMax={monthMax} monthMin={monthMin} monthAvg={monthAvg} monthLossPct={monthLossPct} now={now}
-          />
+          <Link to="/historico" className="block">
+            <MonthPanel
+              monthMax={monthMax} monthMin={monthMin} monthAvg={monthAvg} monthLossPct={monthLossPct} now={now}
+            />
+          </Link>
         )}
 
         {showM("quick-actions") && (
@@ -347,43 +349,49 @@ function DashboardPage() {
         )}
 
         {showM("habits") && (
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-2 flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
-              </CardTitle>
-              <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
-            </CardHeader>
-            <CardContent>
-              {habits.length === 0 ? (
-                <Link to="/habitos" className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary">
-                  Crie seus primeiros hábitos
-                </Link>
-              ) : (
-                <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
-                  {habitProgress.map(({ habit, total, pct }) => (
-                    <li key={habit.id}>
-                      <div className="mb-1 flex items-center justify-between text-xs">
-                        <span className="font-medium truncate">{habit.name}</span>
-                        <span className="text-muted-foreground tabular-nums">
-                          {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
-                        </span>
-                      </div>
-                      <Progress value={pct} className="h-1.5" />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <Link to="/habitos" className="block">
+            <Card className="border-0 shadow-md transition-shadow hover:shadow-lg">
+              <CardHeader className="pb-2 flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
+                </CardTitle>
+                <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
+              </CardHeader>
+              <CardContent>
+                {habits.length === 0 ? (
+                  <div className="rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                    Crie seus primeiros hábitos
+                  </div>
+                ) : (
+                  <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
+                    {habitProgress.map(({ habit, total, pct }) => (
+                      <li key={habit.id}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="font-medium truncate">{habit.name}</span>
+                          <span className="text-muted-foreground tabular-nums">
+                            {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
+                          </span>
+                        </div>
+                        <Progress value={pct} className="h-1.5" />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
-        {showM("weight-chart") && <WeightChart loading={loading} data={weightChartData} />}
+        {showM("weight-chart") && (
+          <Link to="/medidas" className="block"><WeightChart loading={loading} data={weightChartData} /></Link>
+        )}
 
-        {showM("activity-7d") && <ActivityChartCard activity={activity} />}
+        {showM("activity-7d") && (
+          <Link to="/atividade" className="block"><ActivityChartCard activity={activity} /></Link>
+        )}
 
         {showM("calories") && calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) && (
-          <CalChart data={calChartData} />
+          <Link to="/medidas" className="block"><CalChart data={calChartData} /></Link>
         )}
       </div>
 
