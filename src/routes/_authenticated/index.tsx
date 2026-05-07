@@ -623,13 +623,13 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 }
 
 function KpiCard({
-  icon, label, value, sub, progress, accent, className,
+  icon, label, value, sub, progress, accent, className, to,
 }: {
   icon: React.ReactNode; label: string; value: string; sub?: string;
-  progress?: number; accent?: string; className?: string;
+  progress?: number; accent?: string; className?: string; to?: "/atividade" | "/medidas" | "/habitos" | "/historico";
 }) {
-  return (
-    <Card className={`border-0 shadow-md ${className ?? ""}`}>
+  const card = (
+    <Card className={`border-0 shadow-md transition-shadow ${to ? "hover:shadow-lg" : ""} ${className ?? ""}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -643,6 +643,7 @@ function KpiCard({
       </CardContent>
     </Card>
   );
+  return to ? <Link to={to} className="block">{card}</Link> : card;
 }
 
 function QuickAction({ to, icon, label }: { to: "/atividade" | "/medidas" | "/habitos" | "/historico"; icon: React.ReactNode; label: string }) {
