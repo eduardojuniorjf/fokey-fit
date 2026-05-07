@@ -48,6 +48,7 @@ function HabitosPage() {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [todayLogs, setTodayLogs] = useState<HabitLog[]>([]);
+  const [weekExerciseLogs, setWeekExerciseLogs] = useState<HabitLog[]>([]);
   const [weightKg, setWeightKg] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
