@@ -307,23 +307,25 @@ function DashboardPage() {
         )}
 
         {showM("insight") && (
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm leading-relaxed">{insight}</p>
-              <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
-                <Award className="h-4 w-4 text-primary" />
-                <p className="text-xs">
-                  <span className="font-semibold text-primary">{streak}</span>{" "}
-                  {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <Link to="/atividade" className="block">
+            <Card className="border-0 shadow-md transition-shadow hover:shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm leading-relaxed">{insight}</p>
+                <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
+                  <Award className="h-4 w-4 text-primary" />
+                  <p className="text-xs">
+                    <span className="font-semibold text-primary">{streak}</span>{" "}
+                    {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
         {showM("month") && (
