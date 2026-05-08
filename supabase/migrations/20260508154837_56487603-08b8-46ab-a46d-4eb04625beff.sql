@@ -1,0 +1,1 @@
+ALTER TABLE public.cardio_activities ADD COLUMN IF NOT EXISTS steps integer;
