@@ -1,11 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Activity, Scale, ListChecks, User } from "lucide-react";
+import { Home, Activity, Scale, ListChecks, User, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/", label: "Início", icon: Home, exact: true },
   { to: "/atividade", label: "Atividade", icon: Activity, exact: false },
-  { to: "/medidas", label: "Medidas", icon: Scale, exact: false },
+  { to: "/exercicios", label: "Treinos", icon: Dumbbell, exact: false },
   { to: "/habitos", label: "Hábitos", icon: ListChecks, exact: false },
   { to: "/perfil", label: "Perfil", icon: User, exact: false },
 ] as const;

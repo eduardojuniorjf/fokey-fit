@@ -457,6 +457,18 @@ function HabitosPage() {
                             </p>
                           </div>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingHabit(h);
+                            setEditTarget(String(h.daily_target));
+                          }}
+                          className="shrink-0 text-muted-foreground hover:text-primary"
+                          aria-label="Editar hábito"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
 
                       <div className="mb-2 flex items-baseline justify-between">
