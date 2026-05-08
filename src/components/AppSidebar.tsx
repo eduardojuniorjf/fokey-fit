@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Activity, Scale, ListChecks, User, History, LogOut } from "lucide-react";
+import { Home, Activity, Scale, ListChecks, User, History, LogOut, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import fokeyFitLogo from "@/assets/fokey-fit-logo.png";
 const items = [
   { to: "/", label: "Início", icon: Home, exact: true },
   { to: "/atividade", label: "Atividade", icon: Activity, exact: false },
+  { to: "/exercicios", label: "Exercícios", icon: Dumbbell, exact: false },
   { to: "/medidas", label: "Medidas", icon: Scale, exact: false },
   { to: "/habitos", label: "Hábitos", icon: ListChecks, exact: false },
   { to: "/historico", label: "Histórico", icon: History, exact: false },
