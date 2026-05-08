@@ -16,6 +16,7 @@ import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMedidasRouteImport } from './routes/_authenticated/medidas'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedHabitosRouteImport } from './routes/_authenticated/habitos'
+import { Route as AuthenticatedExerciciosRouteImport } from './routes/_authenticated/exercicios'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedAtividadeRouteImport } from './routes/_authenticated/atividade'
 import { Route as ApiPublicStravaCallbackRouteImport } from './routes/api/public/strava-callback'
@@ -55,6 +56,11 @@ const AuthenticatedHabitosRoute = AuthenticatedHabitosRouteImport.update({
   path: '/habitos',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedExerciciosRoute = AuthenticatedExerciciosRouteImport.update({
+  id: '/exercicios',
+  path: '/exercicios',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/atividade': typeof AuthenticatedAtividadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/exercicios': typeof AuthenticatedExerciciosRoute
   '/habitos': typeof AuthenticatedHabitosRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/medidas': typeof AuthenticatedMedidasRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/atividade': typeof AuthenticatedAtividadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/exercicios': typeof AuthenticatedExerciciosRoute
   '/habitos': typeof AuthenticatedHabitosRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/medidas': typeof AuthenticatedMedidasRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/atividade': typeof AuthenticatedAtividadeRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/exercicios': typeof AuthenticatedExerciciosRoute
   '/_authenticated/habitos': typeof AuthenticatedHabitosRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/medidas': typeof AuthenticatedMedidasRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/atividade'
     | '/configuracoes'
+    | '/exercicios'
     | '/habitos'
     | '/historico'
     | '/medidas'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/atividade'
     | '/configuracoes'
+    | '/exercicios'
     | '/habitos'
     | '/historico'
     | '/medidas'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/atividade'
     | '/_authenticated/configuracoes'
+    | '/_authenticated/exercicios'
     | '/_authenticated/habitos'
     | '/_authenticated/historico'
     | '/_authenticated/medidas'
@@ -214,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHabitosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/exercicios': {
+      id: '/_authenticated/exercicios'
+      path: '/exercicios'
+      fullPath: '/exercicios'
+      preLoaderRoute: typeof AuthenticatedExerciciosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/configuracoes': {
       id: '/_authenticated/configuracoes'
       path: '/configuracoes'
@@ -248,6 +267,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAtividadeRoute: typeof AuthenticatedAtividadeRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedExerciciosRoute: typeof AuthenticatedExerciciosRoute
   AuthenticatedHabitosRoute: typeof AuthenticatedHabitosRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMedidasRoute: typeof AuthenticatedMedidasRoute
@@ -258,6 +278,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAtividadeRoute: AuthenticatedAtividadeRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedExerciciosRoute: AuthenticatedExerciciosRoute,
   AuthenticatedHabitosRoute: AuthenticatedHabitosRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMedidasRoute: AuthenticatedMedidasRoute,
@@ -278,3 +299,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
