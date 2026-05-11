@@ -180,14 +180,38 @@ export async function fetchDailySummaries(params: {
   const tz = params.tzOffsetMinutes ?? 0;
   const { start, end } = computeWindow(params.days, tz);
 
+  // Use Google's "estimated/merged" derived streams so we aggregate ALL
+  // sources (phone, watch, connected apps) — not just the default raw stream.
+  const aggregateBy = [
+    {
+      dataTypeName: "com.google.step_count.delta",
+      dataSourceId:
+        "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
+    },
+    {
+      dataTypeName: "com.google.heart_minutes",
+      dataSourceId:
+        "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
+    },
+    {
+      dataTypeName: "com.google.active_minutes",
+      dataSourceId:
+        "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes",
+    },
+    {
+      dataTypeName: "com.google.calories.expended",
+      dataSourceId:
+        "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
+    },
+    {
+      dataTypeName: "com.google.distance.delta",
+      dataSourceId:
+        "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
+    },
+  ];
+
   const result = await fitnessAggregate(params.accessToken, {
-    aggregateBy: [
-      { dataTypeName: "com.google.step_count.delta" },
-      { dataTypeName: "com.google.heart_minutes" },
-      { dataTypeName: "com.google.active_minutes" },
-      { dataTypeName: "com.google.calories.expended" },
-      { dataTypeName: "com.google.distance.delta" },
-    ],
+    aggregateBy,
     bucketByTime: { durationMillis: DAY_MS },
     startTimeMillis: start,
     endTimeMillis: end,
@@ -195,16 +219,16 @@ export async function fetchDailySummaries(params: {
 
   const buckets = (result.bucket ?? []) as any[];
   return buckets.map((b) => {
-    const ds = b.dataset ?? [];
-    const find = (type: string) =>
-      ds.find((d: any) => d.dataSourceId?.includes(type))?.point;
+    const ds = (b.dataset ?? []) as any[];
+    // Datasets are returned in the same order as aggregateBy.
+    const pointsAt = (i: number) => ds[i]?.point;
     return {
       date: localDateLabel(Number(b.startTimeMillis), tz),
-      steps: Math.round(sumPoints(find("step_count"), "intVal")),
-      cardioPoints: Math.round(sumPoints(find("heart_minutes"), "fpVal")),
-      activeMinutes: Math.round(sumPoints(find("active_minutes"), "intVal")),
-      energyKcal: Math.round(sumPoints(find("calories"), "fpVal")),
-      distanceKm: Number((sumPoints(find("distance"), "fpVal") / 1000).toFixed(2)),
+      steps: Math.round(sumPoints(pointsAt(0), "intVal")),
+      cardioPoints: Math.round(sumPoints(pointsAt(1), "fpVal")),
+      activeMinutes: Math.round(sumPoints(pointsAt(2), "intVal")),
+      energyKcal: Math.round(sumPoints(pointsAt(3), "fpVal")),
+      distanceKm: Number((sumPoints(pointsAt(4), "fpVal") / 1000).toFixed(2)),
     };
   });
 }
