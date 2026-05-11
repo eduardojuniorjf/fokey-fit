@@ -264,10 +264,11 @@ function ExerciciosPage() {
     e.preventDefault();
     if (!user) return;
     setSubmitting(true);
+    const performedAt = fDate ? new Date(fDate) : new Date();
     const payload = {
       user_id: user.id,
       activity_type: fType,
-      performed_at: fDate ? new Date(fDate).toISOString() : new Date().toISOString(),
+      performed_at: performedAt.toISOString(),
       duration_minutes: fDur ? Number(fDur) : 0,
       avg_heart_rate: fHr ? Number(fHr) : null,
       calories: fCal ? Number(fCal) : null,
@@ -275,15 +276,38 @@ function ExerciciosPage() {
       steps: fSteps ? Number(fSteps) : null,
       notes: fNotes || null,
     };
+    const previousDate = editing ? dateOnly(editing.performed_at) : null;
     const { error } = editing
       ? await supabase.from("cardio_activities").update(payload).eq("id", editing.id)
       : await supabase.from("cardio_activities").insert({ ...payload, source: "manual" });
+    if (error) {
+      setSubmitting(false);
+      return toast.error(error.message);
+    }
+    // Sync the exercise habit for the affected date(s)
+    const newDate = dateOnly(performedAt);
+    await syncExerciseHabitForDate(user.id, newDate);
+    if (previousDate && previousDate !== newDate) {
+      await syncExerciseHabitForDate(user.id, previousDate);
+    }
     setSubmitting(false);
-    if (error) return toast.error(error.message);
     toast.success(editing ? "Treino atualizado!" : "Treino registrado!");
     setOpen(false);
     setEditing(null);
     load();
+  };
+
+  const doDelete = async () => {
+    if (!confirmDelete) return;
+    const affectedDate = dateOnly(confirmDelete.performed_at);
+    const { error } = await supabase.from("cardio_activities").delete().eq("id", confirmDelete.id);
+    if (error) toast.error(error.message);
+    else {
+      if (user) await syncExerciseHabitForDate(user.id, affectedDate);
+      toast.success("Treino excluído.");
+      load();
+    }
+    setConfirmDelete(null);
   };
 
   const doDelete = async () => {
