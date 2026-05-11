@@ -180,34 +180,20 @@ export async function fetchDailySummaries(params: {
   const tz = params.tzOffsetMinutes ?? 0;
   const { start, end } = computeWindow(params.days, tz);
 
-  // Use Google's "estimated/merged" derived streams so we aggregate ALL
-  // sources (phone, watch, connected apps) — not just the default raw stream.
+  // For STEPS specifically, use the "estimated_steps" derived stream — this is
+  // the same source the Google Fit Android app uses and accounts for raw sensor
+  // data + adjustments. For everything else, omit dataSourceId so Google
+  // aggregates across ALL connected sources (phone, watch, third-party apps).
   const aggregateBy = [
     {
       dataTypeName: "com.google.step_count.delta",
       dataSourceId:
         "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
     },
-    {
-      dataTypeName: "com.google.heart_minutes",
-      dataSourceId:
-        "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
-    },
-    {
-      dataTypeName: "com.google.active_minutes",
-      dataSourceId:
-        "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes",
-    },
-    {
-      dataTypeName: "com.google.calories.expended",
-      dataSourceId:
-        "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
-    },
-    {
-      dataTypeName: "com.google.distance.delta",
-      dataSourceId:
-        "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
-    },
+    { dataTypeName: "com.google.heart_minutes" },
+    { dataTypeName: "com.google.active_minutes" },
+    { dataTypeName: "com.google.calories.expended" },
+    { dataTypeName: "com.google.distance.delta" },
   ];
 
   const result = await fitnessAggregate(params.accessToken, {
@@ -216,6 +202,20 @@ export async function fetchDailySummaries(params: {
     startTimeMillis: start,
     endTimeMillis: end,
   });
+
+  // Debug log: helps diagnose why totals differ from the Fit app.
+  try {
+    const today = (result.bucket ?? [])[(result.bucket ?? []).length - 1];
+    console.log(
+      "[google-fit] last bucket datasets summary:",
+      JSON.stringify(
+        (today?.dataset ?? []).map((d: any) => ({
+          dsid: d.dataSourceIds,
+          points: d.point?.length ?? 0,
+        }))
+      )
+    );
+  } catch {}
 
   const buckets = (result.bucket ?? []) as any[];
   return buckets.map((b) => {
