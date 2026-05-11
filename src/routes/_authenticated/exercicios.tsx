@@ -309,15 +309,6 @@ function ExerciciosPage() {
     }
     setConfirmDelete(null);
   };
-
-  const doDelete = async () => {
-    if (!confirmDelete) return;
-    const { error } = await supabase.from("cardio_activities").delete().eq("id", confirmDelete.id);
-    if (error) toast.error(error.message);
-    else { toast.success("Treino excluído."); load(); }
-    setConfirmDelete(null);
-  };
-
   const addCustomType = (e: FormEvent) => {
     e.preventDefault();
     const label = customLabel.trim();
