@@ -206,7 +206,14 @@ function ExerciciosPage() {
       .order("performed_at", { ascending: false })
       .limit(100);
     if (error) toast.error(error.message);
-    else setItems((data ?? []) as CardioRow[]);
+    else {
+      const rows = (data ?? []) as CardioRow[];
+      setItems(rows);
+      // Heal habit logs: re-sync the exercise habit for every date that has
+      // activities, so manual/imported workouts always reflect on Hábitos.
+      const uniqueDates = Array.from(new Set(rows.map((r) => dateOnly(r.performed_at))));
+      await Promise.all(uniqueDates.map((d) => syncExerciseHabitForDate(user.id, d)));
+    }
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
