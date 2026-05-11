@@ -85,6 +85,70 @@ function saveImportPrefs(p: { strava: boolean; googleFit: boolean }) {
   localStorage.setItem(IMPORT_PREFS_KEY, JSON.stringify(p));
 }
 
+const EXERCISE_HABIT_ICON = "exercise";
+
+/** Recompute the "Exercício físico" habit log for a given date as the sum
+ *  of all cardio_activities durations on that date. Creates the habit if missing. */
+async function syncExerciseHabitForDate(userId: string, dateISO: string) {
+  // Find or create the exercise habit
+  let { data: habit } = await supabase
+    .from("habits")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("icon", EXERCISE_HABIT_ICON)
+    .eq("active", true)
+    .maybeSingle();
+  if (!habit) {
+    const { data: created } = await supabase
+      .from("habits")
+      .insert({
+        user_id: userId,
+        name: "Exercício físico",
+        icon: EXERCISE_HABIT_ICON,
+        daily_target: 150,
+        unit: "min",
+      })
+      .select("id")
+      .single();
+    habit = created;
+  }
+  if (!habit) return;
+
+  // Sum durations of activities performed on that date (local day boundaries)
+  const start = new Date(`${dateISO}T00:00:00`);
+  const end = new Date(`${dateISO}T23:59:59.999`);
+  const { data: acts } = await supabase
+    .from("cardio_activities")
+    .select("duration_minutes")
+    .eq("user_id", userId)
+    .gte("performed_at", start.toISOString())
+    .lte("performed_at", end.toISOString());
+  const total = (acts ?? []).reduce(
+    (s, a: { duration_minutes: number | null }) => s + Number(a.duration_minutes ?? 0),
+    0,
+  );
+
+  // Replace any existing log for this habit+date with a single aggregated entry
+  await supabase
+    .from("habit_logs")
+    .delete()
+    .eq("habit_id", habit.id)
+    .eq("logged_for", dateISO);
+  if (total > 0) {
+    await supabase.from("habit_logs").insert({
+      user_id: userId,
+      habit_id: habit.id,
+      logged_for: dateISO,
+      value: total,
+    });
+  }
+}
+
+function dateOnly(d: Date | string) {
+  const dt = typeof d === "string" ? new Date(d) : d;
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
 function ExerciciosPage() {
   const { user } = useAuth();
   const [items, setItems] = useState<CardioRow[]>([]);
