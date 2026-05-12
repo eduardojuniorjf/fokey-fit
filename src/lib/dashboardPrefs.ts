@@ -2,7 +2,7 @@ export const DASHBOARD_CARDS = [
   { id: "goal", label: "Meta de peso" },
   { id: "kpi-steps", label: "Passos hoje" },
   { id: "kpi-cardio", label: "Pontos cardio" },
-  { id: "kpi-energy", label: "Energia hoje" },
+  { id: "kpi-energy", label: "Calorias queimadas" },
   { id: "kpi-weight", label: "Peso atual" },
   { id: "insight", label: "Insight do dia" },
   { id: "month", label: "Painel do mês" },
