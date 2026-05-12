@@ -444,12 +444,14 @@ function DashboardPage() {
             {showD("kpi-steps") && (
               <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct}
+                onEditMeta={() => openGoalEditor("steps")} />
             )}
             {showD("kpi-cardio") && (
               <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
-                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
+                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct}
+                onEditMeta={() => openGoalEditor("cardio")} />
             )}
             {showD("kpi-energy") && (
               <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
