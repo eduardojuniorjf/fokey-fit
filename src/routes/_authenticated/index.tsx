@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Activity, Scale, ListChecks, Target, TrendingDown, TrendingUp,
-  ArrowDown, ArrowUp, Minus, Flame, Footprints, Heart, Sparkles, Award, History,
+  ArrowDown, ArrowUp, Minus, Flame, Footprints, Heart, Sparkles, Award, History, Pencil,
 } from "lucide-react";
 import {
   LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -90,6 +94,42 @@ function DashboardPage() {
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [prefs, setPrefs] = useState<DashboardPrefs>(EMPTY_PREFS);
   const [loading, setLoading] = useState(true);
+
+  // Edição rápida da meta diária (passos / pontos cardio)
+  const [editingGoal, setEditingGoal] = useState<null | "steps" | "cardio">(null);
+  const [goalDraft, setGoalDraft] = useState("");
+  const [savingGoal, setSavingGoal] = useState(false);
+
+  const openGoalEditor = (field: "steps" | "cardio") => {
+    setGoalDraft(String(field === "steps" ? actGoals.daily_steps : actGoals.daily_cardio_points));
+    setEditingGoal(field);
+  };
+
+  const saveGoal = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingGoal) return;
+    const n = Number(goalDraft);
+    if (!Number.isFinite(n) || n <= 0) {
+      toast.error("Informe um valor maior que zero.");
+      return;
+    }
+    setSavingGoal(true);
+    const next: ActivityGoals = {
+      daily_steps: editingGoal === "steps" ? Math.round(n) : actGoals.daily_steps,
+      daily_cardio_points: editingGoal === "cardio" ? Math.round(n) : actGoals.daily_cardio_points,
+    };
+    const { error } = await supabase
+      .from("activity_goals")
+      .upsert({ user_id: user.id, ...next }, { onConflict: "user_id" });
+    setSavingGoal(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setActGoals(next);
+    setEditingGoal(null);
+    toast.success("Meta atualizada!");
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -285,12 +325,14 @@ function DashboardPage() {
             {showM("kpi-steps") && (
               <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct}
+                onEditMeta={() => openGoalEditor("steps")} />
             )}
             {showM("kpi-cardio") && (
               <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
-                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
+                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct}
+                onEditMeta={() => openGoalEditor("cardio")} />
             )}
             {showM("kpi-energy") && (
               <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
@@ -402,12 +444,14 @@ function DashboardPage() {
             {showD("kpi-steps") && (
               <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct} />
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct}
+                onEditMeta={() => openGoalEditor("steps")} />
             )}
             {showD("kpi-cardio") && (
               <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
-                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct} />
+                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct}
+                onEditMeta={() => openGoalEditor("cardio")} />
             )}
             {showD("kpi-energy") && (
               <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
@@ -604,6 +648,47 @@ function DashboardPage() {
           ].filter((w) => showD(w.id))}
         />
       </div>
+
+      {/* Edição rápida das metas diárias */}
+      <Dialog open={editingGoal !== null} onOpenChange={(o) => !o && setEditingGoal(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {editingGoal === "steps" ? "Meta diária de passos" : "Meta diária de pontos cardio"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveGoal} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="goal-input" className="text-xs">
+                {editingGoal === "steps" ? "Passos por dia" : "Pontos cardio por dia"}
+              </Label>
+              <Input
+                id="goal-input"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                autoFocus
+                value={goalDraft}
+                onChange={(e) => setGoalDraft(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {editingGoal === "steps"
+                  ? "A OMS sugere ao menos 8.000 passos por dia."
+                  : "A OMS recomenda 150 pontos cardio por semana (~7/dia)."}
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={savingGoal}>
+                {savingGoal ? "Salvando..." : "Salvar meta"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -633,13 +718,15 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 }
 
 function KpiCard({
-  icon, label, value, sub, progress, accent, className, to,
+  icon, label, value, sub, progress, accent, className, to, onEditMeta,
 }: {
   icon: React.ReactNode; label: string; value: string; sub?: string;
-  progress?: number; accent?: string; className?: string; to?: "/atividade" | "/medidas" | "/habitos" | "/historico";
+  progress?: number; accent?: string; className?: string;
+  to?: "/atividade" | "/medidas" | "/habitos" | "/historico";
+  onEditMeta?: () => void;
 }) {
   const card = (
-    <Card className={`border-0 shadow-md transition-shadow ${to ? "hover:shadow-lg" : ""} ${className ?? ""}`}>
+    <Card className={`relative border-0 shadow-md transition-shadow ${to ? "hover:shadow-lg" : ""} ${className ?? ""}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -651,6 +738,16 @@ function KpiCard({
         {sub && <p className={`mt-0.5 text-xs ${accent ?? "text-muted-foreground"}`}>{sub}</p>}
         {progress != null && <Progress value={progress} className="mt-3 h-1.5" />}
       </CardContent>
+      {onEditMeta && (
+        <button
+          type="button"
+          aria-label="Editar meta"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditMeta(); }}
+          className="absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      )}
     </Card>
   );
   return to ? <Link to={to} className="block">{card}</Link> : card;
