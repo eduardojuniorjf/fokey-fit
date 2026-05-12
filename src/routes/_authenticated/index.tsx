@@ -95,6 +95,42 @@ function DashboardPage() {
   const [prefs, setPrefs] = useState<DashboardPrefs>(EMPTY_PREFS);
   const [loading, setLoading] = useState(true);
 
+  // Edição rápida da meta diária (passos / pontos cardio)
+  const [editingGoal, setEditingGoal] = useState<null | "steps" | "cardio">(null);
+  const [goalDraft, setGoalDraft] = useState("");
+  const [savingGoal, setSavingGoal] = useState(false);
+
+  const openGoalEditor = (field: "steps" | "cardio") => {
+    setGoalDraft(String(field === "steps" ? actGoals.daily_steps : actGoals.daily_cardio_points));
+    setEditingGoal(field);
+  };
+
+  const saveGoal = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingGoal) return;
+    const n = Number(goalDraft);
+    if (!Number.isFinite(n) || n <= 0) {
+      toast.error("Informe um valor maior que zero.");
+      return;
+    }
+    setSavingGoal(true);
+    const next: ActivityGoals = {
+      daily_steps: editingGoal === "steps" ? Math.round(n) : actGoals.daily_steps,
+      daily_cardio_points: editingGoal === "cardio" ? Math.round(n) : actGoals.daily_cardio_points,
+    };
+    const { error } = await supabase
+      .from("activity_goals")
+      .upsert({ user_id: user.id, ...next }, { onConflict: "user_id" });
+    setSavingGoal(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setActGoals(next);
+    setEditingGoal(null);
+    toast.success("Meta atualizada!");
+  };
+
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
