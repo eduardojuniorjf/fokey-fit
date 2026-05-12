@@ -9,12 +9,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
-  Activity, Scale, ListChecks, Target, TrendingDown, TrendingUp,
-  ArrowDown, ArrowUp, Minus, Flame, Footprints, Heart, Sparkles, Award, History, Pencil,
+  Activity,
+  Scale,
+  ListChecks,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  ArrowDown,
+  ArrowUp,
+  Minus,
+  Flame,
+  Footprints,
+  Heart,
+  Sparkles,
+  Award,
+  History,
+  Pencil,
 } from "lucide-react";
 import {
-  LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
-  AreaChart, Area, BarChart, Bar,
+  LineChart,
+  Line,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
 } from "recharts";
 import { toast } from "sonner";
 import { MasonryDashboard } from "@/components/MasonryDashboard";
@@ -136,25 +159,38 @@ function DashboardPage() {
     let cancelled = false;
     const load = async () => {
       const today = todayISO();
-      const [profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes, prefsRes] =
-        await Promise.all([
-          supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
-          supabase
-            .from("weight_entries")
-            .select("recorded_at, weight_kg, calories_burned, calories_consumed, water_liters")
-            .order("recorded_at", { ascending: true })
-            .limit(180),
-          supabase.from("weight_goals").select("*").eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-          supabase
-            .from("daily_activity")
-            .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
-            .order("recorded_for", { ascending: true })
-            .limit(365),
-          supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
-          supabase.from("habits").select("id, name, daily_target, unit").eq("active", true).order("created_at", { ascending: true }),
-          supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
-          supabase.from("dashboard_preferences").select("mobile_hidden, desktop_hidden").eq("user_id", user.id).maybeSingle(),
-        ]);
+      const [profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes, prefsRes] = await Promise.all([
+        supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
+        supabase
+          .from("weight_entries")
+          .select("recorded_at, weight_kg, calories_burned, calories_consumed, water_liters")
+          .order("recorded_at", { ascending: true })
+          .limit(180),
+        supabase
+          .from("weight_goals")
+          .select("*")
+          .eq("active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("daily_activity")
+          .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
+          .order("recorded_for", { ascending: true })
+          .limit(365),
+        supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
+        supabase
+          .from("habits")
+          .select("id, name, daily_target, unit")
+          .eq("active", true)
+          .order("created_at", { ascending: true }),
+        supabase.from("habit_logs").select("habit_id, value").eq("logged_for", today),
+        supabase
+          .from("dashboard_preferences")
+          .select("mobile_hidden, desktop_hidden")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
       if (cancelled) return;
       if (profileRes.data) setDisplayName(profileRes.data.display_name);
       if (weightRes.error) toast.error(weightRes.error.message);
@@ -164,10 +200,11 @@ function DashboardPage() {
       if (!actGoalsRes.error && actGoalsRes.data) setActGoals(actGoalsRes.data as ActivityGoals);
       if (!habitsRes.error) setHabits((habitsRes.data ?? []) as Habit[]);
       if (!logsRes.error) setHabitLogs((logsRes.data ?? []) as HabitLog[]);
-      if (!prefsRes.error && prefsRes.data) setPrefs({
-        mobile_hidden: prefsRes.data.mobile_hidden ?? [],
-        desktop_hidden: prefsRes.data.desktop_hidden ?? [],
-      });
+      if (!prefsRes.error && prefsRes.data)
+        setPrefs({
+          mobile_hidden: prefsRes.data.mobile_hidden ?? [],
+          desktop_hidden: prefsRes.data.desktop_hidden ?? [],
+        });
       setLoading(false);
     };
     load();
@@ -323,27 +360,45 @@ function DashboardPage() {
         {(showM("kpi-steps") || showM("kpi-cardio") || showM("kpi-energy") || showM("kpi-weight")) && (
           <div className="grid grid-cols-2 gap-3">
             {showM("kpi-steps") && (
-              <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+              <KpiCard
+                to="/atividade"
+                icon={<Footprints className="h-5 w-5" />}
+                label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct}
-                onEditMeta={() => openGoalEditor("steps")} />
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`}
+                progress={stepsPct}
+                onEditMeta={() => openGoalEditor("steps")}
+              />
             )}
             {showM("kpi-cardio") && (
-              <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+              <KpiCard
+                to="/atividade"
+                icon={<Heart className="h-5 w-5" />}
+                label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
-                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct}
-                onEditMeta={() => openGoalEditor("cardio")} />
+                sub={`Meta ${actGoals.daily_cardio_points}`}
+                progress={cardioPct}
+                onEditMeta={() => openGoalEditor("cardio")}
+              />
             )}
             {showM("kpi-energy") && (
-              <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+              <KpiCard
+                to="/atividade"
+                icon={<Flame className="h-5 w-5" />}
+                label="Calorias queimadas"
                 value={`${todayAct?.energy_kcal ?? 0} kcal`}
-                sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
+                sub={`${todayAct?.active_minutes ?? 0} min ativos`}
+              />
             )}
             {showM("kpi-weight") && (
-              <KpiCard to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso atual"
+              <KpiCard
+                to="/medidas"
+                icon={<Scale className="h-5 w-5" />}
+                label="Peso atual"
                 value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
                 sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
-                accent={bmiCat?.tone} />
+                accent={bmiCat?.tone}
+              />
             )}
           </div>
         )}
@@ -373,14 +428,20 @@ function DashboardPage() {
         {showM("month") && (
           <Link to="/historico" className="block">
             <MonthPanel
-              monthMax={monthMax} monthMin={monthMin} monthAvg={monthAvg} monthLossPct={monthLossPct} now={now}
+              monthMax={monthMax}
+              monthMin={monthMin}
+              monthAvg={monthAvg}
+              monthLossPct={monthLossPct}
+              now={now}
             />
           </Link>
         )}
 
         {showM("quick-actions") && (
           <div>
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registrar agora</h2>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Registrar agora
+            </h2>
             <div className="grid grid-cols-4 gap-3">
               <QuickAction to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso" />
               <QuickAction to="/atividade" icon={<Activity className="h-5 w-5" />} label="Atividade" />
@@ -397,7 +458,9 @@ function DashboardPage() {
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
+                <span className="text-xs text-muted-foreground">
+                  {habitsCompleted}/{habits.length}
+                </span>
               </CardHeader>
               <CardContent>
                 {habits.length === 0 ? (
@@ -411,7 +474,8 @@ function DashboardPage() {
                         <div className="mb-1 flex items-center justify-between text-xs">
                           <span className="font-medium truncate">{habit.name}</span>
                           <span className="text-muted-foreground tabular-nums">
-                            {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
+                            {total}/{habit.daily_target}
+                            {habit.unit ? ` ${habit.unit}` : ""}
                           </span>
                         </div>
                         <Progress value={pct} className="h-1.5" />
@@ -425,15 +489,21 @@ function DashboardPage() {
         )}
 
         {showM("weight-chart") && (
-          <Link to="/medidas" className="block"><WeightChart loading={loading} data={weightChartData} /></Link>
+          <Link to="/medidas" className="block">
+            <WeightChart loading={loading} data={weightChartData} />
+          </Link>
         )}
 
         {showM("activity-7d") && (
-          <Link to="/atividade" className="block"><ActivityChartCard activity={activity} /></Link>
+          <Link to="/atividade" className="block">
+            <ActivityChartCard activity={activity} />
+          </Link>
         )}
 
         {showM("calories") && calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) && (
-          <Link to="/medidas" className="block"><CalChart data={calChartData} /></Link>
+          <Link to="/medidas" className="block">
+            <CalChart data={calChartData} />
+          </Link>
         )}
       </div>
 
@@ -442,209 +512,328 @@ function DashboardPage() {
         {(showD("kpi-steps") || showD("kpi-cardio") || showD("kpi-energy") || showD("kpi-weight")) && (
           <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
             {showD("kpi-steps") && (
-              <KpiCard to="/atividade" icon={<Footprints className="h-5 w-5" />} label="Passos hoje"
+              <KpiCard
+                to="/atividade"
+                icon={<Footprints className="h-5 w-5" />}
+                label="Passos hoje"
                 value={(todayAct?.steps ?? 0).toLocaleString("pt-BR")}
-                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`} progress={stepsPct}
-                onEditMeta={() => openGoalEditor("steps")} />
+                sub={`Meta ${actGoals.daily_steps.toLocaleString("pt-BR")}`}
+                progress={stepsPct}
+                onEditMeta={() => openGoalEditor("steps")}
+              />
             )}
             {showD("kpi-cardio") && (
-              <KpiCard to="/atividade" icon={<Heart className="h-5 w-5" />} label="Pontos cardio"
+              <KpiCard
+                to="/atividade"
+                icon={<Heart className="h-5 w-5" />}
+                label="Pontos cardio"
                 value={String(todayAct?.cardio_points ?? 0)}
-                sub={`Meta ${actGoals.daily_cardio_points}`} progress={cardioPct}
-                onEditMeta={() => openGoalEditor("cardio")} />
+                sub={`Meta ${actGoals.daily_cardio_points}`}
+                progress={cardioPct}
+                onEditMeta={() => openGoalEditor("cardio")}
+              />
             )}
             {showD("kpi-energy") && (
-              <KpiCard to="/atividade" icon={<Flame className="h-5 w-5" />} label="Energia hoje"
+              <KpiCard
+                to="/atividade"
+                icon={<Flame className="h-5 w-5" />}
+                label="Energia hoje"
                 value={`${todayAct?.energy_kcal ?? 0} kcal`}
-                sub={`${todayAct?.active_minutes ?? 0} min ativos`} />
+                sub={`${todayAct?.active_minutes ?? 0} min ativos`}
+              />
             )}
             {showD("kpi-weight") && (
-              <KpiCard to="/medidas" icon={<Scale className="h-5 w-5" />} label="Peso atual"
+              <KpiCard
+                to="/medidas"
+                icon={<Scale className="h-5 w-5" />}
+                label="Peso atual"
                 value={currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
                 sub={bmi != null && bmiCat ? `IMC ${bmi.toFixed(1)} · ${bmiCat.label}` : "Defina altura na meta"}
-                accent={bmiCat?.tone} />
+                accent={bmiCat?.tone}
+              />
             )}
           </div>
         )}
 
         <MasonryDashboard
           widgets={[
-            { id: "goal", to: "/medidas", node: (
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Target className="h-4 w-4 text-primary" /> Meta de peso
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {goal ? (
-                    <>
-                      <div className="mb-3 flex items-baseline justify-between">
-                        <p className="text-4xl font-bold text-primary">{progressPct.toFixed(0)}%</p>
-                        <div className="text-right text-sm text-muted-foreground">
-                          <p>{currentWeight?.toFixed(1) ?? "—"} → {Number(goal.target_weight_kg).toFixed(1)} kg</p>
-                          <p className="text-xs">{daysLeft} dias restantes</p>
-                        </div>
-                      </div>
-                      <Progress value={progressPct} className="h-3" />
-                      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                        <MiniStat label="Início" value={`${Number(goal.start_weight_kg).toFixed(1)} kg`} />
-                        <MiniStat label="Perdido" value={`${Math.max(0, lostSoFar).toFixed(1)} kg`} accent="good" />
-                        <MiniStat label="Faltam" value={`${Math.max(0, totalToLose - lostSoFar).toFixed(1)} kg`} />
-                      </div>
-                    </>
-                  ) : (
-                    <Link to="/medidas" className="block rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary">
-                      <Target className="mx-auto h-8 w-8 text-primary" />
-                      <p className="mt-2 text-sm font-semibold">Defina sua meta de peso</p>
-                      <p className="text-xs text-muted-foreground">Acompanhe seu progresso</p>
-                    </Link>
-                  )}
-                </CardContent>
-              </Card>
-            )},
-            { id: "insight", to: "/atividade", node: (
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm leading-relaxed">{insight}</p>
-                  <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
-                    <Award className="h-4 w-4 text-primary" />
-                    <p className="text-xs">
-                      <span className="font-semibold text-primary">{streak}</span>{" "}
-                      {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )},
-            { id: "habits", to: "/habitos", node: (
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-2 flex-row items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
-                  </CardTitle>
-                  <span className="text-xs text-muted-foreground">{habitsCompleted}/{habits.length}</span>
-                </CardHeader>
-                <CardContent>
-                  {habits.length === 0 ? (
-                    <Link to="/habitos" className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary">
-                      Crie seus primeiros hábitos
-                    </Link>
-                  ) : (
-                    <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
-                      {habitProgress.map(({ habit, total, pct }) => (
-                        <li key={habit.id}>
-                          <div className="mb-1 flex items-center justify-between text-xs">
-                            <span className="font-medium truncate">{habit.name}</span>
-                            <span className="text-muted-foreground tabular-nums">
-                              {total}/{habit.daily_target}{habit.unit ? ` ${habit.unit}` : ""}
-                            </span>
+            {
+              id: "goal",
+              to: "/medidas",
+              node: (
+                <Card className="border-0 shadow-md">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Target className="h-4 w-4 text-primary" /> Meta de peso
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {goal ? (
+                      <>
+                        <div className="mb-3 flex items-baseline justify-between">
+                          <p className="text-4xl font-bold text-primary">{progressPct.toFixed(0)}%</p>
+                          <div className="text-right text-sm text-muted-foreground">
+                            <p>
+                              {currentWeight?.toFixed(1) ?? "—"} → {Number(goal.target_weight_kg).toFixed(1)} kg
+                            </p>
+                            <p className="text-xs">{daysLeft} dias restantes</p>
                           </div>
-                          <Progress value={pct} className="h-1.5" />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            )},
-            { id: "weight-chart", to: "/medidas", node: (
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Evolução do peso</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="h-64 animate-pulse rounded-md bg-muted" />
-                  ) : weightChartData.length < 2 ? (
-                    <p className="py-16 text-center text-sm text-muted-foreground">
-                      Registre seu peso ao menos 2 vezes para ver a evolução.
-                    </p>
-                  ) : (
-                    <div className="h-64 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={weightChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} domain={["dataMin - 1", "dataMax + 1"]} />
-                          <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                          <Line type="monotone" dataKey="peso" stroke="var(--primary)" strokeWidth={2.5} dot={{ fill: "var(--primary)", r: 3 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
+                        </div>
+                        <Progress value={progressPct} className="h-3" />
+                        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                          <MiniStat label="Início" value={`${Number(goal.start_weight_kg).toFixed(1)} kg`} />
+                          <MiniStat label="Perdido" value={`${Math.max(0, lostSoFar).toFixed(1)} kg`} accent="good" />
+                          <MiniStat label="Faltam" value={`${Math.max(0, totalToLose - lostSoFar).toFixed(1)} kg`} />
+                        </div>
+                      </>
+                    ) : (
+                      <Link
+                        to="/medidas"
+                        className="block rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary"
+                      >
+                        <Target className="mx-auto h-8 w-8 text-primary" />
+                        <p className="mt-2 text-sm font-semibold">Defina sua meta de peso</p>
+                        <p className="text-xs text-muted-foreground">Acompanhe seu progresso</p>
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+              ),
+            },
+            {
+              id: "insight",
+              to: "/atividade",
+              node: (
+                <Card className="border-0 shadow-md">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Sparkles className="h-4 w-4 text-primary" /> Insight do dia
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm leading-relaxed">{insight}</p>
+                    <div className="flex items-center gap-2 rounded-lg bg-primary/8 px-3 py-2">
+                      <Award className="h-4 w-4 text-primary" />
+                      <p className="text-xs">
+                        <span className="font-semibold text-primary">{streak}</span>{" "}
+                        {streak === 1 ? "dia ativo" : "dias ativos"} seguidos
+                      </p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            )},
-            { id: "month", to: "/historico", node: (
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    {MONTHS[now.getMonth()]} / {now.getFullYear()}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-3">
-                  <Stat icon={<ArrowUp className="h-4 w-4" />} label="Máximo" value={monthMax ? `${monthMax.toFixed(1)} kg` : "—"} />
-                  <Stat icon={<ArrowDown className="h-4 w-4" />} label="Mínimo" value={monthMin ? `${monthMin.toFixed(1)} kg` : "—"} />
-                  <Stat icon={<Minus className="h-4 w-4" />} label="Média" value={monthAvg ? `${monthAvg.toFixed(1)} kg` : "—"} />
-                  <Stat
-                    icon={monthLossPct != null && monthLossPct >= 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-                    label="% mês"
-                    value={monthLossPct != null ? `${monthLossPct >= 0 ? "-" : "+"}${Math.abs(monthLossPct).toFixed(1)}%` : "—"}
-                    accent={monthLossPct != null && monthLossPct > 0 ? "good" : monthLossPct != null && monthLossPct < 0 ? "bad" : "neutral"}
-                  />
-                </CardContent>
-              </Card>
-            )},
-            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={activity} /> },
-            { id: "calories", to: "/medidas", node: (
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Calorias — últimos 30 dias</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) ? (
-                    <>
-                      <div className="h-56 w-full">
+                  </CardContent>
+                </Card>
+              ),
+            },
+            {
+              id: "habits",
+              to: "/habitos",
+              node: (
+                <Card className="border-0 shadow-md">
+                  <CardHeader className="pb-2 flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <ListChecks className="h-4 w-4 text-primary" /> Hábitos hoje
+                    </CardTitle>
+                    <span className="text-xs text-muted-foreground">
+                      {habitsCompleted}/{habits.length}
+                    </span>
+                  </CardHeader>
+                  <CardContent>
+                    {habits.length === 0 ? (
+                      <Link
+                        to="/habitos"
+                        className="block rounded-lg border-2 border-dashed border-border p-4 text-center text-sm text-muted-foreground hover:border-primary"
+                      >
+                        Crie seus primeiros hábitos
+                      </Link>
+                    ) : (
+                      <ul className="space-y-2.5 max-h-[240px] overflow-y-auto">
+                        {habitProgress.map(({ habit, total, pct }) => (
+                          <li key={habit.id}>
+                            <div className="mb-1 flex items-center justify-between text-xs">
+                              <span className="font-medium truncate">{habit.name}</span>
+                              <span className="text-muted-foreground tabular-nums">
+                                {total}/{habit.daily_target}
+                                {habit.unit ? ` ${habit.unit}` : ""}
+                              </span>
+                            </div>
+                            <Progress value={pct} className="h-1.5" />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              ),
+            },
+            {
+              id: "weight-chart",
+              to: "/medidas",
+              node: (
+                <Card className="border-0 shadow-md">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Evolução do peso</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loading ? (
+                      <div className="h-64 animate-pulse rounded-md bg-muted" />
+                    ) : weightChartData.length < 2 ? (
+                      <p className="py-16 text-center text-sm text-muted-foreground">
+                        Registre seu peso ao menos 2 vezes para ver a evolução.
+                      </p>
+                    ) : (
+                      <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={calChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="cQd" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.6} />
-                                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                              </linearGradient>
-                              <linearGradient id="cCd" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.6} />
-                                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
+                          <LineChart data={weightChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                            <YAxis tick={{ fontSize: 11 }} />
-                            <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                            <Area type="monotone" dataKey="queimadas" stroke="var(--primary)" fill="url(#cQd)" strokeWidth={2} />
-                            <Area type="monotone" dataKey="consumidas" stroke="var(--accent)" fill="url(#cCd)" strokeWidth={2} />
-                          </AreaChart>
+                            <YAxis tick={{ fontSize: 11 }} domain={["dataMin - 1", "dataMax + 1"]} />
+                            <Tooltip
+                              contentStyle={{
+                                background: "var(--card)",
+                                border: "1px solid var(--border)",
+                                borderRadius: "8px",
+                                fontSize: "12px",
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="peso"
+                              stroke="var(--primary)"
+                              strokeWidth={2.5}
+                              dot={{ fill: "var(--primary)", r: 3 }}
+                            />
+                          </LineChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="mt-2 flex justify-center gap-4 text-[11px] text-muted-foreground">
-                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Queimadas</span>
-                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" />Consumidas</span>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="py-16 text-center text-sm text-muted-foreground">
-                      Sem dados de calorias nos últimos 30 dias.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )},
+                    )}
+                  </CardContent>
+                </Card>
+              ),
+            },
+            {
+              id: "month",
+              to: "/historico",
+              node: (
+                <Card className="border-0 shadow-md">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">
+                      {MONTHS[now.getMonth()]} / {now.getFullYear()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-3">
+                    <Stat
+                      icon={<ArrowUp className="h-4 w-4" />}
+                      label="Máximo"
+                      value={monthMax ? `${monthMax.toFixed(1)} kg` : "—"}
+                    />
+                    <Stat
+                      icon={<ArrowDown className="h-4 w-4" />}
+                      label="Mínimo"
+                      value={monthMin ? `${monthMin.toFixed(1)} kg` : "—"}
+                    />
+                    <Stat
+                      icon={<Minus className="h-4 w-4" />}
+                      label="Média"
+                      value={monthAvg ? `${monthAvg.toFixed(1)} kg` : "—"}
+                    />
+                    <Stat
+                      icon={
+                        monthLossPct != null && monthLossPct >= 0 ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4" />
+                        )
+                      }
+                      label="% mês"
+                      value={
+                        monthLossPct != null
+                          ? `${monthLossPct >= 0 ? "-" : "+"}${Math.abs(monthLossPct).toFixed(1)}%`
+                          : "—"
+                      }
+                      accent={
+                        monthLossPct != null && monthLossPct > 0
+                          ? "good"
+                          : monthLossPct != null && monthLossPct < 0
+                            ? "bad"
+                            : "neutral"
+                      }
+                    />
+                  </CardContent>
+                </Card>
+              ),
+            },
+            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={activity} /> },
+            {
+              id: "calories",
+              to: "/medidas",
+              node: (
+                <Card className="border-0 shadow-md">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Calorias — últimos 30 dias</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {calChartData.some((d) => d.queimadas > 0 || d.consumidas > 0) ? (
+                      <>
+                        <div className="h-56 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={calChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                              <defs>
+                                <linearGradient id="cQd" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.6} />
+                                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id="cCd" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.6} />
+                                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                              <YAxis tick={{ fontSize: 11 }} />
+                              <Tooltip
+                                contentStyle={{
+                                  background: "var(--card)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: "8px",
+                                  fontSize: "12px",
+                                }}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="queimadas"
+                                stroke="var(--primary)"
+                                fill="url(#cQd)"
+                                strokeWidth={2}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="consumidas"
+                                stroke="var(--accent)"
+                                fill="url(#cCd)"
+                                strokeWidth={2}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="mt-2 flex justify-center gap-4 text-[11px] text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                            Queimadas
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="h-2 w-2 rounded-full bg-accent" />
+                            Consumidas
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="py-16 text-center text-sm text-muted-foreground">
+                        Sem dados de calorias nos últimos 30 dias.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ),
+            },
           ].filter((w) => showD(w.id))}
         />
       </div>
@@ -695,7 +884,17 @@ function DashboardPage() {
 
 /* ----------- Componentes auxiliares ----------- */
 
-function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: "good" | "bad" | "neutral" }) {
+function Stat({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  accent?: "good" | "bad" | "neutral";
+}) {
   const color = accent === "good" ? "text-primary" : accent === "bad" ? "text-destructive" : "text-foreground";
   return (
     <div className="rounded-xl bg-muted/50 p-3">
@@ -718,10 +917,23 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 }
 
 function KpiCard({
-  icon, label, value, sub, progress, accent, className, to, onEditMeta,
+  icon,
+  label,
+  value,
+  sub,
+  progress,
+  accent,
+  className,
+  to,
+  onEditMeta,
 }: {
-  icon: React.ReactNode; label: string; value: string; sub?: string;
-  progress?: number; accent?: string; className?: string;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  progress?: number;
+  accent?: string;
+  className?: string;
   to?: "/atividade" | "/medidas" | "/habitos" | "/historico";
   onEditMeta?: () => void;
 }) {
@@ -730,9 +942,7 @@ function KpiCard({
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/12 text-primary">
-            {icon}
-          </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/12 text-primary">{icon}</div>
         </div>
         <p className="mt-2 text-2xl font-bold">{value}</p>
         {sub && <p className={`mt-0.5 text-xs ${accent ?? "text-muted-foreground"}`}>{sub}</p>}
@@ -742,7 +952,11 @@ function KpiCard({
         <button
           type="button"
           aria-label="Editar meta"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditMeta(); }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEditMeta();
+          }}
           className="absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -750,25 +964,45 @@ function KpiCard({
       )}
     </Card>
   );
-  return to ? <Link to={to} className="block">{card}</Link> : card;
+  return to ? (
+    <Link to={to} className="block">
+      {card}
+    </Link>
+  ) : (
+    card
+  );
 }
 
-function QuickAction({ to, icon, label }: { to: "/atividade" | "/medidas" | "/habitos" | "/historico"; icon: React.ReactNode; label: string }) {
+function QuickAction({
+  to,
+  icon,
+  label,
+}: {
+  to: "/atividade" | "/medidas" | "/habitos" | "/historico";
+  icon: React.ReactNode;
+  label: string;
+}) {
   return (
     <Link
       to={to}
       className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition-all hover:border-primary hover:shadow-md"
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
-        {icon}
-      </div>
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">{icon}</div>
       <span className="text-xs font-medium">{label}</span>
     </Link>
   );
 }
 
-function GoalCard({ goal, progressPct, currentWeight, daysLeft }: {
-  goal: Goal | null; progressPct: number; currentWeight: number | null; daysLeft: number;
+function GoalCard({
+  goal,
+  progressPct,
+  currentWeight,
+  daysLeft,
+}: {
+  goal: Goal | null;
+  progressPct: number;
+  currentWeight: number | null;
+  daysLeft: number;
 }) {
   if (!goal) {
     return (
@@ -811,8 +1045,18 @@ function GoalCard({ goal, progressPct, currentWeight, daysLeft }: {
   );
 }
 
-function MonthPanel({ monthMax, monthMin, monthAvg, monthLossPct, now }: {
-  monthMax: number | null; monthMin: number | null; monthAvg: number | null; monthLossPct: number | null; now: Date;
+function MonthPanel({
+  monthMax,
+  monthMin,
+  monthAvg,
+  monthLossPct,
+  now,
+}: {
+  monthMax: number | null;
+  monthMin: number | null;
+  monthAvg: number | null;
+  monthLossPct: number | null;
+  now: Date;
 }) {
   return (
     <Card>
@@ -822,14 +1066,34 @@ function MonthPanel({ monthMax, monthMin, monthAvg, monthLossPct, now }: {
         </CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-3 pb-5">
-        <Stat icon={<ArrowUp className="h-4 w-4" />} label="Máximo" value={monthMax ? `${monthMax.toFixed(1)} kg` : "—"} />
-        <Stat icon={<ArrowDown className="h-4 w-4" />} label="Mínimo" value={monthMin ? `${monthMin.toFixed(1)} kg` : "—"} />
+        <Stat
+          icon={<ArrowUp className="h-4 w-4" />}
+          label="Máximo"
+          value={monthMax ? `${monthMax.toFixed(1)} kg` : "—"}
+        />
+        <Stat
+          icon={<ArrowDown className="h-4 w-4" />}
+          label="Mínimo"
+          value={monthMin ? `${monthMin.toFixed(1)} kg` : "—"}
+        />
         <Stat icon={<Minus className="h-4 w-4" />} label="Média" value={monthAvg ? `${monthAvg.toFixed(1)} kg` : "—"} />
         <Stat
-          icon={monthLossPct != null && monthLossPct >= 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+          icon={
+            monthLossPct != null && monthLossPct >= 0 ? (
+              <TrendingDown className="h-4 w-4" />
+            ) : (
+              <TrendingUp className="h-4 w-4" />
+            )
+          }
           label="% do mês"
           value={monthLossPct != null ? `${monthLossPct >= 0 ? "-" : "+"}${Math.abs(monthLossPct).toFixed(1)}%` : "—"}
-          accent={monthLossPct != null && monthLossPct > 0 ? "good" : monthLossPct != null && monthLossPct < 0 ? "bad" : "neutral"}
+          accent={
+            monthLossPct != null && monthLossPct > 0
+              ? "good"
+              : monthLossPct != null && monthLossPct < 0
+                ? "bad"
+                : "neutral"
+          }
         />
       </CardContent>
     </Card>
@@ -856,8 +1120,21 @@ function WeightChart({ loading, data }: { loading: boolean; data: { date: string
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} domain={["dataMin - 1", "dataMax + 1"]} />
-                <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                <Line type="monotone" dataKey="peso" stroke="var(--primary)" strokeWidth={2.5} dot={{ fill: "var(--primary)", r: 3 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="peso"
+                  stroke="var(--primary)"
+                  strokeWidth={2.5}
+                  dot={{ fill: "var(--primary)", r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -890,15 +1167,28 @@ function CalChart({ data }: { data: { date: string; queimadas: number; consumida
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              />
               <Area type="monotone" dataKey="queimadas" stroke="var(--primary)" fill="url(#cQ)" strokeWidth={2} />
               <Area type="monotone" dataKey="consumidas" stroke="var(--accent)" fill="url(#cC)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
         <div className="mt-2 flex justify-center gap-4 text-[11px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Queimadas</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" />Consumidas</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            Queimadas
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-accent" />
+            Consumidas
+          </span>
         </div>
       </CardContent>
     </Card>
