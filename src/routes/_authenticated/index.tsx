@@ -673,13 +673,15 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 }
 
 function KpiCard({
-  icon, label, value, sub, progress, accent, className, to,
+  icon, label, value, sub, progress, accent, className, to, onEditMeta,
 }: {
   icon: React.ReactNode; label: string; value: string; sub?: string;
-  progress?: number; accent?: string; className?: string; to?: "/atividade" | "/medidas" | "/habitos" | "/historico";
+  progress?: number; accent?: string; className?: string;
+  to?: "/atividade" | "/medidas" | "/habitos" | "/historico";
+  onEditMeta?: () => void;
 }) {
   const card = (
-    <Card className={`border-0 shadow-md transition-shadow ${to ? "hover:shadow-lg" : ""} ${className ?? ""}`}>
+    <Card className={`relative border-0 shadow-md transition-shadow ${to ? "hover:shadow-lg" : ""} ${className ?? ""}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -691,6 +693,16 @@ function KpiCard({
         {sub && <p className={`mt-0.5 text-xs ${accent ?? "text-muted-foreground"}`}>{sub}</p>}
         {progress != null && <Progress value={progress} className="mt-3 h-1.5" />}
       </CardContent>
+      {onEditMeta && (
+        <button
+          type="button"
+          aria-label="Editar meta"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditMeta(); }}
+          className="absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      )}
     </Card>
   );
   return to ? <Link to={to} className="block">{card}</Link> : card;
