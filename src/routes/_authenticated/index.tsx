@@ -648,6 +648,47 @@ function DashboardPage() {
           ].filter((w) => showD(w.id))}
         />
       </div>
+
+      {/* Edição rápida das metas diárias */}
+      <Dialog open={editingGoal !== null} onOpenChange={(o) => !o && setEditingGoal(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {editingGoal === "steps" ? "Meta diária de passos" : "Meta diária de pontos cardio"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveGoal} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="goal-input" className="text-xs">
+                {editingGoal === "steps" ? "Passos por dia" : "Pontos cardio por dia"}
+              </Label>
+              <Input
+                id="goal-input"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                autoFocus
+                value={goalDraft}
+                onChange={(e) => setGoalDraft(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {editingGoal === "steps"
+                  ? "A OMS sugere ao menos 8.000 passos por dia."
+                  : "A OMS recomenda 150 pontos cardio por semana (~7/dia)."}
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setEditingGoal(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={savingGoal}>
+                {savingGoal ? "Salvando..." : "Salvar meta"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
