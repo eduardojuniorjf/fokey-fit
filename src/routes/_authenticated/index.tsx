@@ -537,7 +537,7 @@ function DashboardPage() {
               <KpiCard
                 to="/atividade"
                 icon={<Flame className="h-5 w-5" />}
-                label="Energia hoje"
+                label="Calorias queimadas"
                 value={`${todayAct?.energy_kcal ?? 0} kcal`}
                 sub={`${todayAct?.active_minutes ?? 0} min ativos`}
               />
