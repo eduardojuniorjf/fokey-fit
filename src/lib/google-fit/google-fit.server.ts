@@ -111,8 +111,11 @@ async function fitnessAggregate(accessToken: string, body: AggregateRequest) {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0",
+        Pragma: "no-cache",
       },
       body: JSON.stringify(body),
+      cache: "no-store",
     }
   );
   if (!res.ok) {
@@ -487,7 +490,12 @@ export async function fetchSessions(params: {
   url.searchParams.set("endTime", new Date(end).toISOString());
 
   const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${params.accessToken}` },
+    headers: {
+      Authorization: `Bearer ${params.accessToken}`,
+      "Cache-Control": "no-cache, no-store, max-age=0",
+      Pragma: "no-cache",
+    },
+    cache: "no-store",
   });
   if (!res.ok) {
     const text = await res.text();
