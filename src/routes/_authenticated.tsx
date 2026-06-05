@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/contexts/AuthContext";
 import { BottomNav } from "@/components/BottomNav";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -14,6 +15,10 @@ function AuthenticatedLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const userId = user?.id;
+  const getGoogleFitStatusFn = useServerFn(getGoogleFitStatus);
+  const syncGoogleFitFn = useServerFn(syncGoogleFit);
+  const getStravaStatusFn = useServerFn(getStravaStatus);
+  const syncStravaFn = useServerFn(syncStrava);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -26,13 +31,16 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
+    let running = false;
     const run = async () => {
+      if (running) return;
+      running = true;
       // Google Fit
       try {
-        const s = await getGoogleFitStatus();
+        const s = await getGoogleFitStatusFn();
         if (!cancelled && s?.connected) {
           const tz = -new Date().getTimezoneOffset();
-          const res = await syncGoogleFit({ data: { tzOffsetMinutes: tz } });
+          const res = await syncGoogleFitFn({ data: { tzOffsetMinutes: tz } });
           console.log("[gf] auto-sync ok", res);
           if (!cancelled) window.dispatchEvent(new CustomEvent("gf:synced"));
         }
@@ -41,14 +49,16 @@ function AuthenticatedLayout() {
       }
       // Strava
       try {
-        const s = await getStravaStatus();
+        const s = await getStravaStatusFn();
         if (!cancelled && s?.connected) {
-          const res = await syncStrava();
+          const res = await syncStravaFn();
           console.log("[strava] auto-sync ok", res);
           if (!cancelled) window.dispatchEvent(new CustomEvent("strava:synced"));
         }
       } catch (e) {
         console.warn("[strava] auto-sync falhou:", e);
+      } finally {
+        running = false;
       }
     };
     run();
@@ -64,7 +74,7 @@ function AuthenticatedLayout() {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [userId]);
+  }, [userId, getGoogleFitStatusFn, syncGoogleFitFn, getStravaStatusFn, syncStravaFn]);
 
   if (loading || !user) {
     return (
