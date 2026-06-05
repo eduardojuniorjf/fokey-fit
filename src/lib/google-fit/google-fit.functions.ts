@@ -156,10 +156,40 @@ export const syncGoogleFit = createServerFn({ method: "POST" })
       if (!error) weightCount++;
     }
 
+    // Upsert individual workout sessions into cardio_activities (dedup by external_id)
+    let sessionCount = 0;
+    for (const s of sessions) {
+      const { data: existing } = await supabaseAdmin
+        .from("cardio_activities")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("source", "google_fit")
+        .eq("external_id", s.externalId)
+        .maybeSingle();
+      const payload = {
+        user_id: userId,
+        activity_type: s.activityType,
+        performed_at: s.startTime,
+        duration_minutes: s.durationMinutes,
+        distance_km: s.distanceKm,
+        calories: s.calories,
+        avg_heart_rate: s.avgHeartRate,
+        steps: s.steps,
+        notes: s.name,
+        source: "google_fit",
+        external_id: s.externalId,
+      };
+      const { error } = existing
+        ? await supabaseAdmin.from("cardio_activities").update(payload).eq("id", existing.id)
+        : await supabaseAdmin.from("cardio_activities").insert(payload);
+      if (!error) sessionCount++;
+    }
+
     await supabaseAdmin
       .from("integrations")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("id", integ.id);
 
-    return { activityCount, weightCount };
+    return { activityCount, weightCount, sessionCount };
   });
+
