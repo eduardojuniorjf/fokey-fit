@@ -345,25 +345,46 @@ async function fetchSessionMetrics(
   const durationMs = Math.max(endMs - startMs, 1);
   const result = await fitnessAggregate(accessToken, {
     aggregateBy: [
+      // 0: calories merged from all sources (inclui Health Connect / Mi Fitness)
+      {
+        dataTypeName: "com.google.calories.expended",
+        dataSourceId:
+          "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
+      },
+      // 1: calories from_activities (exclui BMR)
       {
         dataTypeName: "com.google.calories.expended",
         dataSourceId:
           "derived:com.google.calories.expended:com.google.android.gms:from_activities",
       },
-      { dataTypeName: "com.google.calories.expended" }, // fallback any source
+      // 2: calories any source (fallback)
+      { dataTypeName: "com.google.calories.expended" },
+      // 3: distance merged
       {
         dataTypeName: "com.google.distance.delta",
         dataSourceId:
           "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
       },
+      // 4: distance any source
+      { dataTypeName: "com.google.distance.delta" },
+      // 5: steps merged
+      {
+        dataTypeName: "com.google.step_count.delta",
+        dataSourceId:
+          "derived:com.google.step_count.delta:com.google.android.gms:merge_step_deltas",
+      },
+      // 6: steps any source
       { dataTypeName: "com.google.step_count.delta" },
+      // 7: heart rate
       { dataTypeName: "com.google.heart_rate.bpm" },
+      // 8: cardio points merged
       {
         dataTypeName: "com.google.heart_minutes",
         dataSourceId:
           "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
       },
-      { dataTypeName: "com.google.heart_minutes" }, // fallback
+      // 9: cardio any source
+      { dataTypeName: "com.google.heart_minutes" },
     ],
     bucketByTime: { durationMillis: durationMs },
     startTimeMillis: startMs,
@@ -374,19 +395,36 @@ async function fetchSessionMetrics(
   const ds = (bucket?.dataset ?? []) as any[];
   const pointsAt = (i: number) => ds[i]?.point;
 
-  const calFromActivities = Math.round(sumPoints(pointsAt(0), "fpVal"));
-  const calAnySource = Math.round(sumPoints(pointsAt(1), "fpVal"));
-  const calories = Math.max(calFromActivities, calAnySource);
-  const distanceM = sumPoints(pointsAt(2), "fpVal");
-  const steps = Math.round(sumPoints(pointsAt(3), "intVal"));
-  const cardioMerged = Math.round(sumPoints(pointsAt(5), "fpVal"));
-  const cardioAny = Math.round(sumPoints(pointsAt(6), "fpVal"));
+  try {
+    console.log(
+      "[google-fit] session datasets:",
+      JSON.stringify(
+        (bucket?.dataset ?? []).map((d: any) => ({
+          dsid: d.dataSourceIds,
+          points: d.point?.length ?? 0,
+        }))
+      )
+    );
+  } catch {}
+
+  const calMerged = Math.round(sumPoints(pointsAt(0), "fpVal"));
+  const calFromActivities = Math.round(sumPoints(pointsAt(1), "fpVal"));
+  const calAnySource = Math.round(sumPoints(pointsAt(2), "fpVal"));
+  const calories = Math.max(calMerged, calFromActivities, calAnySource);
+  const distMerged = sumPoints(pointsAt(3), "fpVal");
+  const distAny = sumPoints(pointsAt(4), "fpVal");
+  const distanceM = Math.max(distMerged, distAny);
+  const stepsMerged = Math.round(sumPoints(pointsAt(5), "intVal"));
+  const stepsAny = Math.round(sumPoints(pointsAt(6), "intVal"));
+  const steps = Math.max(stepsMerged, stepsAny);
+  const cardioMerged = Math.round(sumPoints(pointsAt(8), "fpVal"));
+  const cardioAny = Math.round(sumPoints(pointsAt(9), "fpVal"));
   const cardioPoints = Math.max(cardioMerged, cardioAny);
 
   // Average HR across all heart_rate points in the window
   let hrSum = 0;
   let hrCount = 0;
-  for (const p of pointsAt(4) ?? []) {
+  for (const p of pointsAt(7) ?? []) {
     for (const v of p.value ?? []) {
       if (typeof v.fpVal === "number") {
         hrSum += v.fpVal;
@@ -404,6 +442,7 @@ async function fetchSessionMetrics(
     avgHeartRate: avgHr,
   };
 }
+
 
 
 /** Fetches Google Fit workout sessions within the last N days. */
