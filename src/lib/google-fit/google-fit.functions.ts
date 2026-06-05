@@ -6,9 +6,11 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   buildAuthUrl,
   fetchDailySummaries,
+  fetchSessions,
   fetchWeightSamples,
   refreshAccessToken,
 } from "./google-fit.server";
+
 
 function getOrigin(): string {
   const req = getRequest();
