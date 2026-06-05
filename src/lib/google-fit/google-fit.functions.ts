@@ -106,11 +106,13 @@ export const syncGoogleFit = createServerFn({ method: "POST" })
         .eq("id", integ.id);
     }
 
-    // Fetch last 7 days of activity + 30 days of weight, aligned to user's local timezone
-    const [daily, weights] = await Promise.all([
+    // Fetch last 7 days of activity + 30 days of weight + sessions, aligned to user's local timezone
+    const [daily, weights, sessions] = await Promise.all([
       fetchDailySummaries({ accessToken, days: 7, tzOffsetMinutes }),
       fetchWeightSamples({ accessToken, days: 30, tzOffsetMinutes }),
+      fetchSessions({ accessToken, days: 7, tzOffsetMinutes }),
     ]);
+
 
     // Upsert daily activity
     let activityCount = 0;
