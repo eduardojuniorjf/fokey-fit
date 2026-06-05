@@ -524,7 +524,7 @@ function DashboardPage() {
 
         {showM("activity-7d") && (
           <Link to="/atividade" className="block">
-            <ActivityChartCard activity={activity} />
+            <ActivityChartCard activity={dashboardActivity} />
           </Link>
         )}
 
@@ -789,7 +789,7 @@ function DashboardPage() {
                 </Card>
               ),
             },
-            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={activity} /> },
+            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={dashboardActivity} /> },
             {
               id: "calories",
               to: "/medidas",
