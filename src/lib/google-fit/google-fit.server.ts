@@ -393,6 +393,7 @@ export async function fetchSessions(params: {
 
     const durationMinutes = Math.max(1, Math.round((endMs - startMs) / 60000));
     let metrics = {
+      cardioPoints: 0,
       calories: null as number | null,
       distanceKm: null as number | null,
       steps: null as number | null,
