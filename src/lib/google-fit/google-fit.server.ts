@@ -111,8 +111,11 @@ async function fitnessAggregate(accessToken: string, body: AggregateRequest) {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0",
+        Pragma: "no-cache",
       },
       body: JSON.stringify(body),
+      cache: "no-store",
     }
   );
   if (!res.ok) {
