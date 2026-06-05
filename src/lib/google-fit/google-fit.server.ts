@@ -136,6 +136,41 @@ export interface WeightSample {
   weightKg: number;
 }
 
+export interface FitnessSession {
+  externalId: string;
+  name: string;
+  activityType: string;
+  startTime: string;
+  durationMinutes: number;
+  calories: number | null;
+  distanceKm: number | null;
+  steps: number | null;
+  avgHeartRate: number | null;
+}
+
+// Google Fit activity type IDs → our internal values
+// https://developers.google.com/fit/rest/v1/reference/activity-types
+const ACTIVITY_TYPE_MAP: Record<number, string> = {
+  1: "cycling",
+  7: "walking",
+  8: "running",
+  56: "running",
+  57: "running",
+  58: "running",
+  82: "swimming",
+  84: "swimming",
+  88: "swimming",
+  116: "tennis",
+  119: "treadmill",
+  173: "treadmill",
+};
+
+function mapActivityType(googleType: number | undefined): string {
+  if (googleType == null) return "other";
+  return ACTIVITY_TYPE_MAP[googleType] ?? "other";
+}
+
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Local-date label (YYYY-MM-DD) for a timestamp, shifted by user's tz offset (minutes east of UTC). */
