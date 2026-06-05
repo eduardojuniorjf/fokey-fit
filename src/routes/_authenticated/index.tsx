@@ -345,7 +345,7 @@ function DashboardPage() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = localDateISO(d);
       const row = dashboardActivity.find((a) => a.recorded_for === iso);
       out.push({
         date: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
