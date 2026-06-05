@@ -242,10 +242,12 @@ export async function fetchDailySummaries(params: {
     cardioMergedBuckets,
     cardioAnyBuckets,
     activeBuckets,
+    activeAnyBuckets,
     calMergedBuckets,
     calFromActBuckets,
     calAnyBuckets,
     distBuckets,
+    distAnyBuckets,
   ] = await Promise.all([
     safeBuckets("steps_merged", [{
       dataTypeName: "com.google.step_count.delta",
@@ -265,6 +267,7 @@ export async function fetchDailySummaries(params: {
       dataTypeName: "com.google.active_minutes",
       dataSourceId: "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes",
     }]),
+    safeBuckets("active_minutes_any", [{ dataTypeName: "com.google.active_minutes" }]),
     safeBuckets("cal_merged", [{
       dataTypeName: "com.google.calories.expended",
       dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
@@ -278,6 +281,7 @@ export async function fetchDailySummaries(params: {
       dataTypeName: "com.google.distance.delta",
       dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
     }]),
+    safeBuckets("distance_any", [{ dataTypeName: "com.google.distance.delta" }]),
   ]);
 
   // Indexa por data local para mesclar com Math.max
@@ -300,11 +304,13 @@ export async function fetchDailySummaries(params: {
   for (const b of stepsAnyBuckets) ensure(b).steps = Math.max(ensure(b).steps, Math.round(sumBucket(b, "intVal")));
   for (const b of cardioMergedBuckets) ensure(b).cardioPoints = Math.max(ensure(b).cardioPoints, Math.round(sumBucket(b, "fpVal")));
   for (const b of cardioAnyBuckets) ensure(b).cardioPoints = Math.max(ensure(b).cardioPoints, Math.round(sumBucket(b, "fpVal")));
-  for (const b of activeBuckets) ensure(b).activeMinutes = Math.round(sumBucket(b, "intVal"));
+  for (const b of activeBuckets) ensure(b).activeMinutes = Math.max(ensure(b).activeMinutes, Math.round(sumBucket(b, "intVal")));
+  for (const b of activeAnyBuckets) ensure(b).activeMinutes = Math.max(ensure(b).activeMinutes, Math.round(sumBucket(b, "intVal")));
   for (const b of calMergedBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
   for (const b of calFromActBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
   for (const b of calAnyBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
   for (const b of distBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
+  for (const b of distAnyBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
 
   return Array.from(dates.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
