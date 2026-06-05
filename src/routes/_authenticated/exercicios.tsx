@@ -219,6 +219,18 @@ function ExerciciosPage() {
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
+  // Recarrega quando o auto-sync (Google Fit / Strava) terminar
+  useEffect(() => {
+    if (!user) return;
+    const onSynced = () => { load(); };
+    window.addEventListener("gf:synced", onSynced);
+    window.addEventListener("strava:synced", onSynced);
+    return () => {
+      window.removeEventListener("gf:synced", onSynced);
+      window.removeEventListener("strava:synced", onSynced);
+    };
+    /* eslint-disable-next-line */
+  }, [user]);
 
   const runImport = async (which: "strava" | "googleFit") => {
     setSyncing(true);
