@@ -103,6 +103,7 @@ export type Database = {
           activity_type: string
           avg_heart_rate: number | null
           calories: number | null
+          cardio_points: number | null
           created_at: string
           distance_km: number | null
           duration_minutes: number
@@ -119,6 +120,7 @@ export type Database = {
           activity_type?: string
           avg_heart_rate?: number | null
           calories?: number | null
+          cardio_points?: number | null
           created_at?: string
           distance_km?: number | null
           duration_minutes: number
@@ -135,6 +137,7 @@ export type Database = {
           activity_type?: string
           avg_heart_rate?: number | null
           calories?: number | null
+          cardio_points?: number | null
           created_at?: string
           distance_km?: number | null
           duration_minutes?: number
