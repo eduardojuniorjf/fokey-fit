@@ -136,6 +136,41 @@ export interface WeightSample {
   weightKg: number;
 }
 
+export interface FitnessSession {
+  externalId: string;
+  name: string;
+  activityType: string;
+  startTime: string;
+  durationMinutes: number;
+  calories: number | null;
+  distanceKm: number | null;
+  steps: number | null;
+  avgHeartRate: number | null;
+}
+
+// Google Fit activity type IDs → our internal values
+// https://developers.google.com/fit/rest/v1/reference/activity-types
+const ACTIVITY_TYPE_MAP: Record<number, string> = {
+  1: "cycling",
+  7: "walking",
+  8: "running",
+  56: "running",
+  57: "running",
+  58: "running",
+  82: "swimming",
+  84: "swimming",
+  88: "swimming",
+  116: "tennis",
+  119: "treadmill",
+  173: "treadmill",
+};
+
+function mapActivityType(googleType: number | undefined): string {
+  if (googleType == null) return "other";
+  return ACTIVITY_TYPE_MAP[googleType] ?? "other";
+}
+
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Local-date label (YYYY-MM-DD) for a timestamp, shifted by user's tz offset (minutes east of UTC). */
@@ -269,4 +304,108 @@ export async function fetchWeightSamples(params: {
     }
   }
   return samples;
+}
+
+// --- Sessions (individual workouts) ----------------------------------------
+
+/** Aggregates calories/distance/steps/HR for a specific time window. */
+async function fetchSessionMetrics(
+  accessToken: string,
+  startMs: number,
+  endMs: number,
+) {
+  const durationMs = Math.max(endMs - startMs, 1);
+  const result = await fitnessAggregate(accessToken, {
+    aggregateBy: [
+      { dataTypeName: "com.google.calories.expended" },
+      { dataTypeName: "com.google.distance.delta" },
+      { dataTypeName: "com.google.step_count.delta" },
+      { dataTypeName: "com.google.heart_rate.bpm" },
+    ],
+    bucketByTime: { durationMillis: durationMs },
+    startTimeMillis: startMs,
+    endTimeMillis: endMs,
+  });
+
+  const bucket = (result.bucket ?? [])[0];
+  const ds = (bucket?.dataset ?? []) as any[];
+  const pointsAt = (i: number) => ds[i]?.point;
+
+  const calories = Math.round(sumPoints(pointsAt(0), "fpVal"));
+  const distanceM = sumPoints(pointsAt(1), "fpVal");
+  const steps = Math.round(sumPoints(pointsAt(2), "intVal"));
+
+  // Average HR across all heart_rate points in the window
+  let hrSum = 0;
+  let hrCount = 0;
+  for (const p of pointsAt(3) ?? []) {
+    for (const v of p.value ?? []) {
+      if (typeof v.fpVal === "number") {
+        hrSum += v.fpVal;
+        hrCount++;
+      }
+    }
+  }
+  const avgHr = hrCount > 0 ? Math.round(hrSum / hrCount) : null;
+
+  return {
+    calories: calories > 0 ? calories : null,
+    distanceKm: distanceM > 0 ? Number((distanceM / 1000).toFixed(2)) : null,
+    steps: steps > 0 ? steps : null,
+    avgHeartRate: avgHr,
+  };
+}
+
+/** Fetches Google Fit workout sessions within the last N days. */
+export async function fetchSessions(params: {
+  accessToken: string;
+  days: number;
+  tzOffsetMinutes?: number;
+}): Promise<FitnessSession[]> {
+  const tz = params.tzOffsetMinutes ?? 0;
+  const { start, end } = computeWindow(params.days, tz);
+
+  const url = new URL("https://www.googleapis.com/fitness/v1/users/me/sessions");
+  url.searchParams.set("startTime", new Date(start).toISOString());
+  url.searchParams.set("endTime", new Date(end).toISOString());
+
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${params.accessToken}` },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Fitness API sessions failed [${res.status}]: ${text}`);
+  }
+  const body = (await res.json()) as { session?: any[] };
+  const rawSessions = body.session ?? [];
+
+  const out: FitnessSession[] = [];
+  for (const s of rawSessions) {
+    const startMs = Number(s.startTimeMillis);
+    const endMs = Number(s.endTimeMillis);
+    if (!startMs || !endMs || endMs <= startMs) continue;
+
+    const durationMinutes = Math.max(1, Math.round((endMs - startMs) / 60000));
+    let metrics = {
+      calories: null as number | null,
+      distanceKm: null as number | null,
+      steps: null as number | null,
+      avgHeartRate: null as number | null,
+    };
+    try {
+      metrics = await fetchSessionMetrics(params.accessToken, startMs, endMs);
+    } catch (err) {
+      console.warn("[google-fit] session metrics failed", s.id, err);
+    }
+
+    out.push({
+      externalId: String(s.id ?? `${startMs}-${endMs}`),
+      name: s.name ?? s.description ?? "Treino",
+      activityType: mapActivityType(s.activityType),
+      startTime: new Date(startMs).toISOString(),
+      durationMinutes,
+      ...metrics,
+    });
+  }
+  return out;
 }

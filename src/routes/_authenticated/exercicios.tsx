@@ -226,7 +226,8 @@ function ExerciciosPage() {
         toast.success(`Strava: ${r.activityCount} atividades importadas`);
       } else {
         const r = await syncGoogleFitFn({ data: { tzOffsetMinutes: -new Date().getTimezoneOffset() } });
-        toast.success(`Google Fit: ${r.activityCount} dias importados`);
+        toast.success(`Google Fit: ${r.sessionCount ?? 0} treinos, ${r.activityCount} dias importados`);
+
       }
       load();
     } catch (e) {
