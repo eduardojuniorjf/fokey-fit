@@ -52,6 +52,8 @@ function AuthenticatedLayout() {
       }
     };
     run();
+    // Re-sync periodically (every 30s) while the tab is open
+    const interval = window.setInterval(run, 30_000);
     // Re-sync when tab becomes visible again (real-time-ish updates)
     const onVisible = () => {
       if (document.visibilityState === "visible") run();
@@ -59,6 +61,7 @@ function AuthenticatedLayout() {
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [userId]);
