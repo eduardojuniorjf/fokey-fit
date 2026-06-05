@@ -70,6 +70,12 @@ interface DailyActivity {
   energy_kcal: number;
   active_minutes: number;
 }
+interface CardioActivity {
+  performed_at: string;
+  duration_minutes: number;
+  calories: number | null;
+  steps: number | null;
+}
 interface ActivityGoals {
   daily_steps: number;
   daily_cardio_points: number;
@@ -112,6 +118,7 @@ function DashboardPage() {
   const [weights, setWeights] = useState<WeightRow[]>([]);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [activity, setActivity] = useState<DailyActivity[]>([]);
+  const [cardioActivities, setCardioActivities] = useState<CardioActivity[]>([]);
   const [actGoals, setActGoals] = useState<ActivityGoals>(DEFAULT_ACT_GOALS);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
@@ -159,7 +166,7 @@ function DashboardPage() {
     let cancelled = false;
     const load = async () => {
       const today = todayISO();
-      const [profileRes, weightRes, goalRes, actRes, actGoalsRes, habitsRes, logsRes, prefsRes] = await Promise.all([
+      const [profileRes, weightRes, goalRes, actRes, cardioRes, actGoalsRes, habitsRes, logsRes, prefsRes] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
         supabase
           .from("weight_entries")
@@ -177,6 +184,11 @@ function DashboardPage() {
           .from("daily_activity")
           .select("recorded_for, steps, cardio_points, energy_kcal, active_minutes")
           .order("recorded_for", { ascending: true })
+          .limit(365),
+        supabase
+          .from("cardio_activities")
+          .select("performed_at, duration_minutes, calories, steps")
+          .order("performed_at", { ascending: true })
           .limit(365),
         supabase.from("activity_goals").select("daily_steps, daily_cardio_points").maybeSingle(),
         supabase
@@ -197,6 +209,7 @@ function DashboardPage() {
       else setWeights((weightRes.data ?? []) as WeightRow[]);
       if (!goalRes.error) setGoal((goalRes.data as Goal | null) ?? null);
       if (!actRes.error) setActivity((actRes.data ?? []) as DailyActivity[]);
+      if (!cardioRes.error) setCardioActivities((cardioRes.data ?? []) as CardioActivity[]);
       if (!actGoalsRes.error && actGoalsRes.data) setActGoals(actGoalsRes.data as ActivityGoals);
       if (!habitsRes.error) setHabits((habitsRes.data ?? []) as Habit[]);
       if (!logsRes.error) setHabitLogs((logsRes.data ?? []) as HabitLog[]);
@@ -210,11 +223,26 @@ function DashboardPage() {
     load();
     const onSynced = () => load();
     window.addEventListener("gf:synced", onSynced);
+    window.addEventListener("strava:synced", onSynced);
     return () => {
       cancelled = true;
       window.removeEventListener("gf:synced", onSynced);
+      window.removeEventListener("strava:synced", onSynced);
     };
   }, [user]);
+
+  const dashboardActivity = useMemo(() => {
+    const map = new Map(activity.map((a) => [a.recorded_for, { ...a }]));
+    for (const item of cardioActivities) {
+      const date = new Date(item.performed_at).toISOString().slice(0, 10);
+      const row = map.get(date) ?? { recorded_for: date, steps: 0, cardio_points: 0, energy_kcal: 0, active_minutes: 0 };
+      row.steps = Math.max(row.steps, Number(item.steps ?? 0));
+      row.energy_kcal = Math.max(row.energy_kcal, Number(item.calories ?? 0));
+      row.active_minutes = Math.max(row.active_minutes, Number(item.duration_minutes ?? 0));
+      map.set(date, row);
+    }
+    return Array.from(map.values()).sort((a, b) => a.recorded_for.localeCompare(b.recorded_for));
+  }, [activity, cardioActivities]);
 
   // ------ Meta progress ------
   const currentWeight = weights.length ? Number(weights[weights.length - 1].weight_kg) : null;
@@ -249,14 +277,14 @@ function DashboardPage() {
 
   // ------ Hoje (atividade) ------
   const today = todayISO();
-  const todayAct = activity.find((a) => a.recorded_for === today);
+  const todayAct = dashboardActivity.find((a) => a.recorded_for === today);
   const stepsPct = Math.min(100, ((todayAct?.steps ?? 0) / actGoals.daily_steps) * 100);
   const cardioPct = Math.min(100, ((todayAct?.cardio_points ?? 0) / actGoals.daily_cardio_points) * 100);
 
   // ------ Streak (dias com atividade OU peso registrado) ------
   const streak = useMemo(() => {
     const dates = new Set<string>();
-    activity.forEach((a) => dates.add(a.recorded_for));
+    dashboardActivity.forEach((a) => dates.add(a.recorded_for));
     weights.forEach((w) => dates.add(w.recorded_at.slice(0, 10)));
     let count = 0;
     const d = new Date();
@@ -271,7 +299,7 @@ function DashboardPage() {
       } else break;
     }
     return count;
-  }, [activity, weights, today]);
+  }, [dashboardActivity, weights, today]);
 
   // ------ Hábitos hoje ------
   const habitProgress = habits.map((h) => {
@@ -311,7 +339,7 @@ function DashboardPage() {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const iso = d.toISOString().slice(0, 10);
-      const row = activity.find((a) => a.recorded_for === iso);
+      const row = dashboardActivity.find((a) => a.recorded_for === iso);
       out.push({
         date: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
         passos: row?.steps ?? 0,
@@ -319,7 +347,7 @@ function DashboardPage() {
       });
     }
     return out;
-  }, [activity]);
+  }, [dashboardActivity]);
 
   const showM = (id: string) => !prefs.mobile_hidden.includes(id);
   const showD = (id: string) => !prefs.desktop_hidden.includes(id);
@@ -496,7 +524,7 @@ function DashboardPage() {
 
         {showM("activity-7d") && (
           <Link to="/atividade" className="block">
-            <ActivityChartCard activity={activity} />
+            <ActivityChartCard activity={dashboardActivity} />
           </Link>
         )}
 
@@ -761,7 +789,7 @@ function DashboardPage() {
                 </Card>
               ),
             },
-            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={activity} /> },
+            { id: "activity-7d", to: "/atividade", node: <ActivityChartCard activity={dashboardActivity} /> },
             {
               id: "calories",
               to: "/medidas",
