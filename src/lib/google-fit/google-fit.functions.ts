@@ -218,10 +218,12 @@ export const syncGoogleFit = createServerFn({ method: "POST" })
         calories: s.calories,
         avg_heart_rate: s.avgHeartRate,
         steps: s.steps,
+        cardio_points: s.cardioPoints || null,
         notes: s.name,
         source: "google_fit",
         external_id: s.externalId,
       };
+
       const { error } = existing
         ? await supabaseAdmin.from("cardio_activities").update(payload).eq("id", existing.id)
         : await supabaseAdmin.from("cardio_activities").insert(payload);

@@ -216,9 +216,12 @@ export async function fetchDailySummaries(params: {
   const tz = params.tzOffsetMinutes ?? 0;
   const { start, end } = computeWindow(params.days, tz);
 
-  // For steps, ask for both the Fit app's derived stream and the all-sources
-  // aggregate. Some Health Connect / watch workouts only appear in all-sources,
-  // while phone sensor data is usually best represented by estimated_steps.
+  // We want the SAME numbers the Google Fit "home" screen shows:
+  //  - steps: estimated_steps (phone) merged w/ all-sources (watch/Health Connect)
+  //  - calories: "from_activities" only — excludes BMR/basal (~5.700 kcal/dia)
+  //  - cardio points: merge_heart_minutes — includes Health Connect / wearables
+  //  - active minutes: merge_active_minutes (Move Minutes on the Fit UI)
+  //  - distance: merge_distance_delta
   const aggregateBy = [
     {
       dataTypeName: "com.google.step_count.delta",
@@ -226,10 +229,27 @@ export async function fetchDailySummaries(params: {
         "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
     },
     { dataTypeName: "com.google.step_count.delta" },
-    { dataTypeName: "com.google.heart_minutes" },
-    { dataTypeName: "com.google.active_minutes" },
-    { dataTypeName: "com.google.calories.expended" },
-    { dataTypeName: "com.google.distance.delta" },
+    {
+      dataTypeName: "com.google.heart_minutes",
+      dataSourceId:
+        "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
+    },
+    { dataTypeName: "com.google.heart_minutes" }, // fallback (any source)
+    {
+      dataTypeName: "com.google.active_minutes",
+      dataSourceId:
+        "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes",
+    },
+    {
+      dataTypeName: "com.google.calories.expended",
+      dataSourceId:
+        "derived:com.google.calories.expended:com.google.android.gms:from_activities",
+    },
+    {
+      dataTypeName: "com.google.distance.delta",
+      dataSourceId:
+        "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
+    },
   ];
 
   const result = await fitnessAggregate(params.accessToken, {
@@ -256,20 +276,22 @@ export async function fetchDailySummaries(params: {
   const buckets = (result.bucket ?? []) as any[];
   return buckets.map((b) => {
     const ds = (b.dataset ?? []) as any[];
-    // Datasets are returned in the same order as aggregateBy.
     const pointsAt = (i: number) => ds[i]?.point;
     const estimatedSteps = Math.round(sumPoints(pointsAt(0), "intVal"));
     const allSourceSteps = Math.round(sumPoints(pointsAt(1), "intVal"));
+    const cardioMerged = Math.round(sumPoints(pointsAt(2), "fpVal"));
+    const cardioAny = Math.round(sumPoints(pointsAt(3), "fpVal"));
     return {
       date: localDateLabel(Number(b.startTimeMillis), tz),
       steps: Math.max(estimatedSteps, allSourceSteps),
-      cardioPoints: Math.round(sumPoints(pointsAt(2), "fpVal")),
-      activeMinutes: Math.round(sumPoints(pointsAt(3), "intVal")),
-      energyKcal: Math.round(sumPoints(pointsAt(4), "fpVal")),
-      distanceKm: Number((sumPoints(pointsAt(5), "fpVal") / 1000).toFixed(2)),
+      cardioPoints: Math.max(cardioMerged, cardioAny),
+      activeMinutes: Math.round(sumPoints(pointsAt(4), "intVal")),
+      energyKcal: Math.round(sumPoints(pointsAt(5), "fpVal")),
+      distanceKm: Number((sumPoints(pointsAt(6), "fpVal") / 1000).toFixed(2)),
     };
   });
 }
+
 
 export async function fetchWeightSamples(params: {
   accessToken: string;
@@ -311,7 +333,10 @@ export async function fetchWeightSamples(params: {
 
 // --- Sessions (individual workouts) ----------------------------------------
 
-/** Aggregates calories/distance/steps/HR for a specific time window. */
+/** Aggregates calories/distance/steps/HR/cardio for a specific session window.
+ *  Uses Fit "merge_*" derived streams so workouts logged via Health Connect
+ *  (Mi Fitness, Xiaomi Wear, etc.) are included — the generic aggregate
+ *  without a dataSourceId misses Health Connect data. */
 async function fetchSessionMetrics(
   accessToken: string,
   startMs: number,
@@ -320,11 +345,25 @@ async function fetchSessionMetrics(
   const durationMs = Math.max(endMs - startMs, 1);
   const result = await fitnessAggregate(accessToken, {
     aggregateBy: [
-      { dataTypeName: "com.google.calories.expended" },
-      { dataTypeName: "com.google.distance.delta" },
+      {
+        dataTypeName: "com.google.calories.expended",
+        dataSourceId:
+          "derived:com.google.calories.expended:com.google.android.gms:from_activities",
+      },
+      { dataTypeName: "com.google.calories.expended" }, // fallback any source
+      {
+        dataTypeName: "com.google.distance.delta",
+        dataSourceId:
+          "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
+      },
       { dataTypeName: "com.google.step_count.delta" },
       { dataTypeName: "com.google.heart_rate.bpm" },
-      { dataTypeName: "com.google.heart_minutes" },
+      {
+        dataTypeName: "com.google.heart_minutes",
+        dataSourceId:
+          "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
+      },
+      { dataTypeName: "com.google.heart_minutes" }, // fallback
     ],
     bucketByTime: { durationMillis: durationMs },
     startTimeMillis: startMs,
@@ -335,15 +374,19 @@ async function fetchSessionMetrics(
   const ds = (bucket?.dataset ?? []) as any[];
   const pointsAt = (i: number) => ds[i]?.point;
 
-  const calories = Math.round(sumPoints(pointsAt(0), "fpVal"));
-  const distanceM = sumPoints(pointsAt(1), "fpVal");
-  const steps = Math.round(sumPoints(pointsAt(2), "intVal"));
-  const cardioPoints = Math.round(sumPoints(pointsAt(4), "fpVal"));
+  const calFromActivities = Math.round(sumPoints(pointsAt(0), "fpVal"));
+  const calAnySource = Math.round(sumPoints(pointsAt(1), "fpVal"));
+  const calories = Math.max(calFromActivities, calAnySource);
+  const distanceM = sumPoints(pointsAt(2), "fpVal");
+  const steps = Math.round(sumPoints(pointsAt(3), "intVal"));
+  const cardioMerged = Math.round(sumPoints(pointsAt(5), "fpVal"));
+  const cardioAny = Math.round(sumPoints(pointsAt(6), "fpVal"));
+  const cardioPoints = Math.max(cardioMerged, cardioAny);
 
   // Average HR across all heart_rate points in the window
   let hrSum = 0;
   let hrCount = 0;
-  for (const p of pointsAt(3) ?? []) {
+  for (const p of pointsAt(4) ?? []) {
     for (const v of p.value ?? []) {
       if (typeof v.fpVal === "number") {
         hrSum += v.fpVal;
@@ -361,6 +404,7 @@ async function fetchSessionMetrics(
     avgHeartRate: avgHr,
   };
 }
+
 
 /** Fetches Google Fit workout sessions within the last N days. */
 export async function fetchSessions(params: {
