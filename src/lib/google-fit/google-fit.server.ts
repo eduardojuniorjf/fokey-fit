@@ -142,6 +142,7 @@ export interface FitnessSession {
   activityType: string;
   startTime: string;
   durationMinutes: number;
+  cardioPoints: number;
   calories: number | null;
   distanceKm: number | null;
   steps: number | null;
@@ -215,16 +216,16 @@ export async function fetchDailySummaries(params: {
   const tz = params.tzOffsetMinutes ?? 0;
   const { start, end } = computeWindow(params.days, tz);
 
-  // For STEPS specifically, use the "estimated_steps" derived stream — this is
-  // the same source the Google Fit Android app uses and accounts for raw sensor
-  // data + adjustments. For everything else, omit dataSourceId so Google
-  // aggregates across ALL connected sources (phone, watch, third-party apps).
+  // For steps, ask for both the Fit app's derived stream and the all-sources
+  // aggregate. Some Health Connect / watch workouts only appear in all-sources,
+  // while phone sensor data is usually best represented by estimated_steps.
   const aggregateBy = [
     {
       dataTypeName: "com.google.step_count.delta",
       dataSourceId:
         "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
     },
+    { dataTypeName: "com.google.step_count.delta" },
     { dataTypeName: "com.google.heart_minutes" },
     { dataTypeName: "com.google.active_minutes" },
     { dataTypeName: "com.google.calories.expended" },
@@ -257,13 +258,15 @@ export async function fetchDailySummaries(params: {
     const ds = (b.dataset ?? []) as any[];
     // Datasets are returned in the same order as aggregateBy.
     const pointsAt = (i: number) => ds[i]?.point;
+    const estimatedSteps = Math.round(sumPoints(pointsAt(0), "intVal"));
+    const allSourceSteps = Math.round(sumPoints(pointsAt(1), "intVal"));
     return {
       date: localDateLabel(Number(b.startTimeMillis), tz),
-      steps: Math.round(sumPoints(pointsAt(0), "intVal")),
-      cardioPoints: Math.round(sumPoints(pointsAt(1), "fpVal")),
-      activeMinutes: Math.round(sumPoints(pointsAt(2), "intVal")),
-      energyKcal: Math.round(sumPoints(pointsAt(3), "fpVal")),
-      distanceKm: Number((sumPoints(pointsAt(4), "fpVal") / 1000).toFixed(2)),
+      steps: Math.max(estimatedSteps, allSourceSteps),
+      cardioPoints: Math.round(sumPoints(pointsAt(2), "fpVal")),
+      activeMinutes: Math.round(sumPoints(pointsAt(3), "intVal")),
+      energyKcal: Math.round(sumPoints(pointsAt(4), "fpVal")),
+      distanceKm: Number((sumPoints(pointsAt(5), "fpVal") / 1000).toFixed(2)),
     };
   });
 }
