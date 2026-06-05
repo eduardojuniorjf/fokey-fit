@@ -277,14 +277,14 @@ function DashboardPage() {
 
   // ------ Hoje (atividade) ------
   const today = todayISO();
-  const todayAct = activity.find((a) => a.recorded_for === today);
+  const todayAct = dashboardActivity.find((a) => a.recorded_for === today);
   const stepsPct = Math.min(100, ((todayAct?.steps ?? 0) / actGoals.daily_steps) * 100);
   const cardioPct = Math.min(100, ((todayAct?.cardio_points ?? 0) / actGoals.daily_cardio_points) * 100);
 
   // ------ Streak (dias com atividade OU peso registrado) ------
   const streak = useMemo(() => {
     const dates = new Set<string>();
-    activity.forEach((a) => dates.add(a.recorded_for));
+    dashboardActivity.forEach((a) => dates.add(a.recorded_for));
     weights.forEach((w) => dates.add(w.recorded_at.slice(0, 10)));
     let count = 0;
     const d = new Date();
@@ -299,7 +299,7 @@ function DashboardPage() {
       } else break;
     }
     return count;
-  }, [activity, weights, today]);
+  }, [dashboardActivity, weights, today]);
 
   // ------ Hábitos hoje ------
   const habitProgress = habits.map((h) => {
@@ -339,7 +339,7 @@ function DashboardPage() {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const iso = d.toISOString().slice(0, 10);
-      const row = activity.find((a) => a.recorded_for === iso);
+      const row = dashboardActivity.find((a) => a.recorded_for === iso);
       out.push({
         date: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
         passos: row?.steps ?? 0,
@@ -347,7 +347,7 @@ function DashboardPage() {
       });
     }
     return out;
-  }, [activity]);
+  }, [dashboardActivity]);
 
   const showM = (id: string) => !prefs.mobile_hidden.includes(id);
   const showD = (id: string) => !prefs.desktop_hidden.includes(id);
