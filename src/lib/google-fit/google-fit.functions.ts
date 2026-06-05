@@ -18,6 +18,10 @@ function getOrigin(): string {
   return `${url.protocol}//${url.host}`;
 }
 
+function localDateFromIso(iso: string, tzOffsetMinutes: number) {
+  return new Date(new Date(iso).getTime() + tzOffsetMinutes * 60_000).toISOString().slice(0, 10);
+}
+
 /** Start OAuth: returns the Google consent URL for the current user. */
 export const startGoogleFitOAuth = createServerFn({ method: "POST" })
   .middleware([attachSupabaseAuth, requireSupabaseAuth])
@@ -114,9 +118,48 @@ export const syncGoogleFit = createServerFn({ method: "POST" })
     ]);
 
 
-    // Upsert daily activity
+    const sessionTotalsByDate = new Map<
+      string,
+      { steps: number; cardioPoints: number; activeMinutes: number; energyKcal: number; distanceKm: number }
+    >();
+    for (const s of sessions) {
+      const date = localDateFromIso(s.startTime, tzOffsetMinutes);
+      const current = sessionTotalsByDate.get(date) ?? {
+        steps: 0,
+        cardioPoints: 0,
+        activeMinutes: 0,
+        energyKcal: 0,
+        distanceKm: 0,
+      };
+      current.steps += s.steps ?? 0;
+      current.cardioPoints += s.cardioPoints ?? 0;
+      current.activeMinutes += s.durationMinutes;
+      current.energyKcal += s.calories ?? 0;
+      current.distanceKm += s.distanceKm ?? 0;
+      sessionTotalsByDate.set(date, current);
+    }
+
+    const dailyByDate = new Map(daily.map((d) => [d.date, { ...d }]));
+    for (const [date, totals] of sessionTotalsByDate) {
+      const row = dailyByDate.get(date) ?? {
+        date,
+        steps: 0,
+        cardioPoints: 0,
+        activeMinutes: 0,
+        energyKcal: 0,
+        distanceKm: 0,
+      };
+      row.steps = Math.max(row.steps, Math.round(totals.steps));
+      row.cardioPoints = Math.max(row.cardioPoints, Math.round(totals.cardioPoints));
+      row.activeMinutes = Math.max(row.activeMinutes, Math.round(totals.activeMinutes));
+      row.energyKcal = Math.max(row.energyKcal, Math.round(totals.energyKcal));
+      row.distanceKm = Math.max(row.distanceKm, Number(totals.distanceKm.toFixed(2)));
+      dailyByDate.set(date, row);
+    }
+
+    // Upsert daily activity, including individual workout sessions so the dashboard is fed by imports.
     let activityCount = 0;
-    for (const d of daily) {
+    for (const d of dailyByDate.values()) {
       if (d.steps === 0 && d.energyKcal === 0 && d.activeMinutes === 0) continue;
       const { error } = await supabaseAdmin
         .from("daily_activity")
