@@ -36,9 +36,11 @@ interface CardioRow {
   calories: number | null;
   avg_heart_rate: number | null;
   steps: number | null;
+  cardio_points: number | null;
   source: string;
   notes: string | null;
 }
+
 
 interface WorkoutType {
   value: string;
@@ -495,9 +497,13 @@ function ExerciciosPage() {
                           {item.avg_heart_rate && (
                             <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" />{item.avg_heart_rate} bpm</span>
                           )}
+                          {item.cardio_points != null && item.cardio_points > 0 && (
+                            <span className="inline-flex items-center gap-1"><Activity className="h-3 w-3" />{item.cardio_points} pts cardio</span>
+                          )}
                           {item.steps && (
                             <span className="inline-flex items-center gap-1"><Footprints className="h-3 w-3" />{item.steps.toLocaleString("pt-BR")}</span>
                           )}
+
                         </div>
                         {item.source !== "manual" && (
                           <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
