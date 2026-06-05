@@ -324,6 +324,7 @@ async function fetchSessionMetrics(
       { dataTypeName: "com.google.distance.delta" },
       { dataTypeName: "com.google.step_count.delta" },
       { dataTypeName: "com.google.heart_rate.bpm" },
+      { dataTypeName: "com.google.heart_minutes" },
     ],
     bucketByTime: { durationMillis: durationMs },
     startTimeMillis: startMs,
@@ -337,6 +338,7 @@ async function fetchSessionMetrics(
   const calories = Math.round(sumPoints(pointsAt(0), "fpVal"));
   const distanceM = sumPoints(pointsAt(1), "fpVal");
   const steps = Math.round(sumPoints(pointsAt(2), "intVal"));
+  const cardioPoints = Math.round(sumPoints(pointsAt(4), "fpVal"));
 
   // Average HR across all heart_rate points in the window
   let hrSum = 0;
@@ -352,6 +354,7 @@ async function fetchSessionMetrics(
   const avgHr = hrCount > 0 ? Math.round(hrSum / hrCount) : null;
 
   return {
+    cardioPoints,
     calories: calories > 0 ? calories : null,
     distanceKm: distanceM > 0 ? Number((distanceM / 1000).toFixed(2)) : null,
     steps: steps > 0 ? steps : null,
