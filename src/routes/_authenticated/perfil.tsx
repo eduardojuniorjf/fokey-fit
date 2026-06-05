@@ -94,6 +94,7 @@ function PerfilPage() {
     try {
       const r = await syncStravaFn();
       toast.success(`Strava sincronizado! ${r.activityCount} atividade(s).`);
+      window.dispatchEvent(new CustomEvent("strava:synced"));
       await refreshStStatus();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao sincronizar");
@@ -136,6 +137,7 @@ function PerfilPage() {
     try {
       const r = await syncGoogleFitFn({ data: { tzOffsetMinutes: -new Date().getTimezoneOffset() } });
       toast.success(`Sincronizado! ${r.activityCount} dia(s) de atividade, ${r.weightCount} peso(s).`);
+      window.dispatchEvent(new CustomEvent("gf:synced"));
       await refreshGfStatus();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao sincronizar");
