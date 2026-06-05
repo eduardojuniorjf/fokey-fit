@@ -216,81 +216,88 @@ export async function fetchDailySummaries(params: {
   const tz = params.tzOffsetMinutes ?? 0;
   const { start, end } = computeWindow(params.days, tz);
 
-  // We want the SAME numbers the Google Fit "home" screen shows:
-  //  - steps: estimated_steps (phone) merged w/ all-sources (watch/Health Connect)
-  //  - calories: "from_activities" only — excludes BMR/basal (~5.700 kcal/dia)
-  //  - cardio points: merge_heart_minutes — includes Health Connect / wearables
-  //  - active minutes: merge_active_minutes (Move Minutes on the Fit UI)
-  //  - distance: merge_distance_delta
-  const aggregateBy = [
-    {
+  // Cada métrica é uma chamada isolada: se um dataSource não estiver
+  // disponível para o usuário (403), as outras continuam funcionando.
+  const safeBuckets = async (
+    label: string,
+    aggregateBy: Array<{ dataTypeName: string; dataSourceId?: string }>,
+  ): Promise<any[]> => {
+    try {
+      const res = await fitnessAggregate(params.accessToken, {
+        aggregateBy,
+        bucketByTime: { durationMillis: DAY_MS },
+        startTimeMillis: start,
+        endTimeMillis: end,
+      });
+      return (res.bucket ?? []) as any[];
+    } catch (err) {
+      console.warn(`[google-fit] daily metric "${label}" failed:`, err);
+      return [];
+    }
+  };
+
+  const [
+    stepsEstBuckets,
+    stepsAnyBuckets,
+    cardioMergedBuckets,
+    cardioAnyBuckets,
+    activeBuckets,
+    calFromActBuckets,
+    calAnyBuckets,
+    distBuckets,
+  ] = await Promise.all([
+    safeBuckets("steps_estimated", [{
       dataTypeName: "com.google.step_count.delta",
-      dataSourceId:
-        "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
-    },
-    { dataTypeName: "com.google.step_count.delta" },
-    {
+      dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
+    }]),
+    safeBuckets("steps_any", [{ dataTypeName: "com.google.step_count.delta" }]),
+    safeBuckets("cardio_merged", [{
       dataTypeName: "com.google.heart_minutes",
-      dataSourceId:
-        "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
-    },
-    { dataTypeName: "com.google.heart_minutes" }, // fallback (any source)
-    {
+      dataSourceId: "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
+    }]),
+    safeBuckets("cardio_any", [{ dataTypeName: "com.google.heart_minutes" }]),
+    safeBuckets("active_minutes", [{
       dataTypeName: "com.google.active_minutes",
-      dataSourceId:
-        "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes",
-    },
-    {
+      dataSourceId: "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes",
+    }]),
+    safeBuckets("cal_from_activities", [{
       dataTypeName: "com.google.calories.expended",
-      dataSourceId:
-        "derived:com.google.calories.expended:com.google.android.gms:from_activities",
-    },
-    {
+      dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:from_activities",
+    }]),
+    safeBuckets("cal_any", [{ dataTypeName: "com.google.calories.expended" }]),
+    safeBuckets("distance_merged", [{
       dataTypeName: "com.google.distance.delta",
-      dataSourceId:
-        "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
-    },
-  ];
+      dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
+    }]),
+  ]);
 
-  const result = await fitnessAggregate(params.accessToken, {
-    aggregateBy,
-    bucketByTime: { durationMillis: DAY_MS },
-    startTimeMillis: start,
-    endTimeMillis: end,
-  });
+  // Indexa por data local para mesclar com Math.max
+  const sumBucket = (b: any, key: "intVal" | "fpVal") =>
+    sumPoints(b?.dataset?.[0]?.point, key);
 
-  // Debug log: helps diagnose why totals differ from the Fit app.
-  try {
-    const today = (result.bucket ?? [])[(result.bucket ?? []).length - 1];
-    console.log(
-      "[google-fit] last bucket datasets summary:",
-      JSON.stringify(
-        (today?.dataset ?? []).map((d: any) => ({
-          dsid: d.dataSourceIds,
-          points: d.point?.length ?? 0,
-        }))
-      )
-    );
-  } catch {}
+  const dates = new Map<string, DailyFitnessSummary>();
+  const ensure = (b: any): DailyFitnessSummary => {
+    const date = localDateLabel(Number(b.startTimeMillis), tz);
+    let entry = dates.get(date);
+    if (!entry) {
+      entry = { date, steps: 0, cardioPoints: 0, activeMinutes: 0, energyKcal: 0, distanceKm: 0 };
+      dates.set(date, entry);
+    }
+    return entry;
+  };
 
-  const buckets = (result.bucket ?? []) as any[];
-  return buckets.map((b) => {
-    const ds = (b.dataset ?? []) as any[];
-    const pointsAt = (i: number) => ds[i]?.point;
-    const estimatedSteps = Math.round(sumPoints(pointsAt(0), "intVal"));
-    const allSourceSteps = Math.round(sumPoints(pointsAt(1), "intVal"));
-    const cardioMerged = Math.round(sumPoints(pointsAt(2), "fpVal"));
-    const cardioAny = Math.round(sumPoints(pointsAt(3), "fpVal"));
-    return {
-      date: localDateLabel(Number(b.startTimeMillis), tz),
-      steps: Math.max(estimatedSteps, allSourceSteps),
-      cardioPoints: Math.max(cardioMerged, cardioAny),
-      activeMinutes: Math.round(sumPoints(pointsAt(4), "intVal")),
-      energyKcal: Math.round(sumPoints(pointsAt(5), "fpVal")),
-      distanceKm: Number((sumPoints(pointsAt(6), "fpVal") / 1000).toFixed(2)),
-    };
-  });
+  for (const b of stepsEstBuckets) ensure(b).steps = Math.max(ensure(b).steps, Math.round(sumBucket(b, "intVal")));
+  for (const b of stepsAnyBuckets) ensure(b).steps = Math.max(ensure(b).steps, Math.round(sumBucket(b, "intVal")));
+  for (const b of cardioMergedBuckets) ensure(b).cardioPoints = Math.max(ensure(b).cardioPoints, Math.round(sumBucket(b, "fpVal")));
+  for (const b of cardioAnyBuckets) ensure(b).cardioPoints = Math.max(ensure(b).cardioPoints, Math.round(sumBucket(b, "fpVal")));
+  for (const b of activeBuckets) ensure(b).activeMinutes = Math.round(sumBucket(b, "intVal"));
+  for (const b of calFromActBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
+  for (const b of calAnyBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
+  for (const b of distBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
+
+  return Array.from(dates.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
+
 
 
 export async function fetchWeightSamples(params: {
@@ -343,88 +350,91 @@ async function fetchSessionMetrics(
   endMs: number,
 ) {
   const durationMs = Math.max(endMs - startMs, 1);
-  const result = await fitnessAggregate(accessToken, {
-    aggregateBy: [
-      // 0: calories merged from all sources (inclui Health Connect / Mi Fitness)
-      {
-        dataTypeName: "com.google.calories.expended",
-        dataSourceId:
-          "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
-      },
-      // 1: calories from_activities (exclui BMR)
-      {
-        dataTypeName: "com.google.calories.expended",
-        dataSourceId:
-          "derived:com.google.calories.expended:com.google.android.gms:from_activities",
-      },
-      // 2: calories any source (fallback)
-      { dataTypeName: "com.google.calories.expended" },
-      // 3: distance merged
-      {
-        dataTypeName: "com.google.distance.delta",
-        dataSourceId:
-          "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
-      },
-      // 4: distance any source
-      { dataTypeName: "com.google.distance.delta" },
-      // 5: steps merged
-      {
-        dataTypeName: "com.google.step_count.delta",
-        dataSourceId:
-          "derived:com.google.step_count.delta:com.google.android.gms:merge_step_deltas",
-      },
-      // 6: steps any source
-      { dataTypeName: "com.google.step_count.delta" },
-      // 7: heart rate
-      { dataTypeName: "com.google.heart_rate.bpm" },
-      // 8: cardio points merged
-      {
-        dataTypeName: "com.google.heart_minutes",
-        dataSourceId:
-          "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
-      },
-      // 9: cardio any source
-      { dataTypeName: "com.google.heart_minutes" },
-    ],
-    bucketByTime: { durationMillis: durationMs },
-    startTimeMillis: startMs,
-    endTimeMillis: endMs,
-  });
 
-  const bucket = (result.bucket ?? [])[0];
-  const ds = (bucket?.dataset ?? []) as any[];
-  const pointsAt = (i: number) => ds[i]?.point;
+  // Cada métrica é uma chamada isolada — se um dataSource não estiver
+  // habilitado para o usuário (ex.: from_activities → 403), as outras
+  // continuam funcionando.
+  const safeAggregate = async (
+    label: string,
+    aggregateBy: Array<{ dataTypeName: string; dataSourceId?: string }>,
+    valueKey: "intVal" | "fpVal",
+  ): Promise<{ total: number; points: any[] }> => {
+    try {
+      const res = await fitnessAggregate(accessToken, {
+        aggregateBy,
+        bucketByTime: { durationMillis: durationMs },
+        startTimeMillis: startMs,
+        endTimeMillis: endMs,
+      });
+      const bucket = (res.bucket ?? [])[0];
+      const ds = (bucket?.dataset ?? []) as any[];
+      let total = 0;
+      const points: any[] = [];
+      for (const d of ds) {
+        for (const p of d.point ?? []) {
+          points.push(p);
+          for (const v of p.value ?? []) {
+            const val = v[valueKey];
+            if (typeof val === "number") total += val;
+          }
+        }
+      }
+      return { total, points };
+    } catch (err) {
+      console.warn(`[google-fit] session metric "${label}" failed:`, err);
+      return { total: 0, points: [] };
+    }
+  };
 
-  try {
-    console.log(
-      "[google-fit] session datasets:",
-      JSON.stringify(
-        (bucket?.dataset ?? []).map((d: any) => ({
-          dsid: d.dataSourceIds,
-          points: d.point?.length ?? 0,
-        }))
-      )
-    );
-  } catch {}
+  // Calorias: tenta merged, depois from_activities, depois qualquer fonte
+  const [calMerged, calFromAct, calAny] = await Promise.all([
+    safeAggregate("cal_merged", [{
+      dataTypeName: "com.google.calories.expended",
+      dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
+    }], "fpVal"),
+    safeAggregate("cal_from_activities", [{
+      dataTypeName: "com.google.calories.expended",
+      dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:from_activities",
+    }], "fpVal"),
+    safeAggregate("cal_any", [{ dataTypeName: "com.google.calories.expended" }], "fpVal"),
+  ]);
+  const calories = Math.round(Math.max(calMerged.total, calFromAct.total, calAny.total));
 
-  const calMerged = Math.round(sumPoints(pointsAt(0), "fpVal"));
-  const calFromActivities = Math.round(sumPoints(pointsAt(1), "fpVal"));
-  const calAnySource = Math.round(sumPoints(pointsAt(2), "fpVal"));
-  const calories = Math.max(calMerged, calFromActivities, calAnySource);
-  const distMerged = sumPoints(pointsAt(3), "fpVal");
-  const distAny = sumPoints(pointsAt(4), "fpVal");
-  const distanceM = Math.max(distMerged, distAny);
-  const stepsMerged = Math.round(sumPoints(pointsAt(5), "intVal"));
-  const stepsAny = Math.round(sumPoints(pointsAt(6), "intVal"));
-  const steps = Math.max(stepsMerged, stepsAny);
-  const cardioMerged = Math.round(sumPoints(pointsAt(8), "fpVal"));
-  const cardioAny = Math.round(sumPoints(pointsAt(9), "fpVal"));
-  const cardioPoints = Math.max(cardioMerged, cardioAny);
+  const [distMerged, distAny] = await Promise.all([
+    safeAggregate("dist_merged", [{
+      dataTypeName: "com.google.distance.delta",
+      dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
+    }], "fpVal"),
+    safeAggregate("dist_any", [{ dataTypeName: "com.google.distance.delta" }], "fpVal"),
+  ]);
+  const distanceM = Math.max(distMerged.total, distAny.total);
 
-  // Average HR across all heart_rate points in the window
+  const [stepsMerged, stepsAny] = await Promise.all([
+    safeAggregate("steps_merged", [{
+      dataTypeName: "com.google.step_count.delta",
+      dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:merge_step_deltas",
+    }], "intVal"),
+    safeAggregate("steps_any", [{ dataTypeName: "com.google.step_count.delta" }], "intVal"),
+  ]);
+  const steps = Math.round(Math.max(stepsMerged.total, stepsAny.total));
+
+  const [cardioMerged, cardioAny] = await Promise.all([
+    safeAggregate("cardio_merged", [{
+      dataTypeName: "com.google.heart_minutes",
+      dataSourceId: "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes",
+    }], "fpVal"),
+    safeAggregate("cardio_any", [{ dataTypeName: "com.google.heart_minutes" }], "fpVal"),
+  ]);
+  const cardioPoints = Math.round(Math.max(cardioMerged.total, cardioAny.total));
+
+  const hr = await safeAggregate(
+    "heart_rate",
+    [{ dataTypeName: "com.google.heart_rate.bpm" }],
+    "fpVal",
+  );
   let hrSum = 0;
   let hrCount = 0;
-  for (const p of pointsAt(7) ?? []) {
+  for (const p of hr.points) {
     for (const v of p.value ?? []) {
       if (typeof v.fpVal === "number") {
         hrSum += v.fpVal;
@@ -442,6 +452,7 @@ async function fetchSessionMetrics(
     avgHeartRate: avgHr,
   };
 }
+
 
 
 
