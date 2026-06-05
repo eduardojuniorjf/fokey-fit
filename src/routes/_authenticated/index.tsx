@@ -101,7 +101,14 @@ function greeting() {
 }
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-const todayISO = () => new Date().toISOString().slice(0, 10);
+function localDateISO(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const todayISO = () => localDateISO();
 
 function bmiCategory(bmi: number) {
   if (bmi < 18.5) return { label: "Abaixo", tone: "text-blue-500" };
@@ -234,7 +241,7 @@ function DashboardPage() {
   const dashboardActivity = useMemo(() => {
     const map = new Map(activity.map((a) => [a.recorded_for, { ...a }]));
     for (const item of cardioActivities) {
-      const date = new Date(item.performed_at).toISOString().slice(0, 10);
+      const date = localDateISO(new Date(item.performed_at));
       const row = map.get(date) ?? { recorded_for: date, steps: 0, cardio_points: 0, energy_kcal: 0, active_minutes: 0 };
       row.steps = Math.max(row.steps, Number(item.steps ?? 0));
       row.energy_kcal = Math.max(row.energy_kcal, Number(item.calories ?? 0));
@@ -289,7 +296,7 @@ function DashboardPage() {
     let count = 0;
     const d = new Date();
     while (true) {
-      const iso = d.toISOString().slice(0, 10);
+      const iso = localDateISO(d);
       if (dates.has(iso)) {
         count++;
         d.setDate(d.getDate() - 1);
