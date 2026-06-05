@@ -67,7 +67,14 @@ const ACTIVITY_TYPES = [
   { value: "other", label: "Outro", icon: Dumbbell },
 ];
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+function localDateISO(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const todayISO = () => localDateISO();
 
 function startOfWeekISO() {
   const d = new Date();
@@ -75,7 +82,7 @@ function startOfWeekISO() {
   const diff = day === 0 ? 6 : day - 1; // semana inicia segunda
   d.setDate(d.getDate() - diff);
   d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
+  return localDateISO(d);
 }
 
 function AtividadePage() {
@@ -113,7 +120,7 @@ function AtividadePage() {
     setLoading(true);
     const since = new Date();
     since.setDate(since.getDate() - 29);
-    const sinceISO = since.toISOString().slice(0, 10);
+    const sinceISO = localDateISO(since);
     Promise.all([
       supabase
         .from("daily_activity")
@@ -171,7 +178,7 @@ function AtividadePage() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = localDateISO(d);
       const r = days.find((x) => x.recorded_for === iso);
       const dayLabel = ["D", "S", "T", "Q", "Q", "S", "S"][d.getDay()];
       out.push({ dayLabel, iso, steps: r?.steps ?? 0, cardio: r?.cardio_points ?? 0 });

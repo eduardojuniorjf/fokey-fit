@@ -184,14 +184,13 @@ function localMidnightUtcMs(year: number, month: number, day: number, tzOffsetMi
   return Date.UTC(year, month, day) - tzOffsetMinutes * 60_000;
 }
 
-/** Computes bucket window aligned to user's local midnight, ending at next local midnight. */
+/** Computes bucket window aligned to user's local midnight, ending at now so today's partial totals stay fresh. */
 function computeWindow(days: number, tzOffsetMinutes: number) {
   const nowLocal = new Date(Date.now() + tzOffsetMinutes * 60_000);
   const y = nowLocal.getUTCFullYear();
   const m = nowLocal.getUTCMonth();
   const d = nowLocal.getUTCDate();
-  // end = next local midnight (so today's partial day is included)
-  const end = localMidnightUtcMs(y, m, d + 1, tzOffsetMinutes);
+  const end = Date.now();
   const start = localMidnightUtcMs(y, m, d - days + 1, tzOffsetMinutes);
   return { start, end };
 }
@@ -237,15 +236,23 @@ export async function fetchDailySummaries(params: {
   };
 
   const [
+    stepsMergedBuckets,
     stepsEstBuckets,
     stepsAnyBuckets,
     cardioMergedBuckets,
     cardioAnyBuckets,
     activeBuckets,
+    activeAnyBuckets,
+    calMergedBuckets,
     calFromActBuckets,
     calAnyBuckets,
     distBuckets,
+    distAnyBuckets,
   ] = await Promise.all([
+    safeBuckets("steps_merged", [{
+      dataTypeName: "com.google.step_count.delta",
+      dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:merge_step_deltas",
+    }]),
     safeBuckets("steps_estimated", [{
       dataTypeName: "com.google.step_count.delta",
       dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
@@ -260,6 +267,11 @@ export async function fetchDailySummaries(params: {
       dataTypeName: "com.google.active_minutes",
       dataSourceId: "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes",
     }]),
+    safeBuckets("active_minutes_any", [{ dataTypeName: "com.google.active_minutes" }]),
+    safeBuckets("cal_merged", [{
+      dataTypeName: "com.google.calories.expended",
+      dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
+    }]),
     safeBuckets("cal_from_activities", [{
       dataTypeName: "com.google.calories.expended",
       dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:from_activities",
@@ -269,11 +281,12 @@ export async function fetchDailySummaries(params: {
       dataTypeName: "com.google.distance.delta",
       dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta",
     }]),
+    safeBuckets("distance_any", [{ dataTypeName: "com.google.distance.delta" }]),
   ]);
 
   // Indexa por data local para mesclar com Math.max
   const sumBucket = (b: any, key: "intVal" | "fpVal") =>
-    sumPoints(b?.dataset?.[0]?.point, key);
+    ((b?.dataset ?? []) as any[]).reduce((total, dataset) => total + sumPoints(dataset?.point, key), 0);
 
   const dates = new Map<string, DailyFitnessSummary>();
   const ensure = (b: any): DailyFitnessSummary => {
@@ -286,14 +299,18 @@ export async function fetchDailySummaries(params: {
     return entry;
   };
 
+  for (const b of stepsMergedBuckets) ensure(b).steps = Math.max(ensure(b).steps, Math.round(sumBucket(b, "intVal")));
   for (const b of stepsEstBuckets) ensure(b).steps = Math.max(ensure(b).steps, Math.round(sumBucket(b, "intVal")));
   for (const b of stepsAnyBuckets) ensure(b).steps = Math.max(ensure(b).steps, Math.round(sumBucket(b, "intVal")));
   for (const b of cardioMergedBuckets) ensure(b).cardioPoints = Math.max(ensure(b).cardioPoints, Math.round(sumBucket(b, "fpVal")));
   for (const b of cardioAnyBuckets) ensure(b).cardioPoints = Math.max(ensure(b).cardioPoints, Math.round(sumBucket(b, "fpVal")));
-  for (const b of activeBuckets) ensure(b).activeMinutes = Math.round(sumBucket(b, "intVal"));
+  for (const b of activeBuckets) ensure(b).activeMinutes = Math.max(ensure(b).activeMinutes, Math.round(sumBucket(b, "intVal")));
+  for (const b of activeAnyBuckets) ensure(b).activeMinutes = Math.max(ensure(b).activeMinutes, Math.round(sumBucket(b, "intVal")));
+  for (const b of calMergedBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
   for (const b of calFromActBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
   for (const b of calAnyBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
   for (const b of distBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
+  for (const b of distAnyBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
 
   return Array.from(dates.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
