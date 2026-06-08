@@ -228,13 +228,28 @@ function DashboardPage() {
       setLoading(false);
     };
     load();
-    const onSynced = () => load();
+    let refreshTimer: number | undefined;
+    const onSynced = () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(load, 150);
+    };
     window.addEventListener("gf:synced", onSynced);
     window.addEventListener("strava:synced", onSynced);
+    const channel = supabase
+      .channel(`dashboard-live-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_activity" }, onSynced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cardio_activities" }, onSynced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "weight_entries" }, onSynced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "habit_logs" }, onSynced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "activity_goals" }, onSynced)
+      .on("postgres_changes", { event: "*", schema: "public", table: "dashboard_preferences" }, onSynced)
+      .subscribe();
     return () => {
       cancelled = true;
+      if (refreshTimer) window.clearTimeout(refreshTimer);
       window.removeEventListener("gf:synced", onSynced);
       window.removeEventListener("strava:synced", onSynced);
+      supabase.removeChannel(channel);
     };
   }, [user]);
 
