@@ -125,6 +125,22 @@ async function fitnessAggregate(accessToken: string, body: AggregateRequest) {
   return await res.json();
 }
 
+async function fitnessGetJson(accessToken: string, url: string) {
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Cache-Control": "no-cache, no-store, max-age=0",
+      Pragma: "no-cache",
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Fitness API GET failed [${res.status}]: ${text}`);
+  }
+  return await res.json();
+}
+
 export interface DailyFitnessSummary {
   date: string; // YYYY-MM-DD
   steps: number;
@@ -208,6 +224,68 @@ function sumPoints(points: any[] | undefined, key: "intVal" | "fpVal"): number {
     }
   }
   return total;
+}
+
+function nanosToMs(value: string | number | undefined): number | null {
+  if (value == null) return null;
+  try {
+    return Number(BigInt(String(value)) / 1_000_000n);
+  } catch {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.floor(n / 1_000_000) : null;
+  }
+}
+
+async function fetchRawDailyMaxBySource(params: {
+  accessToken: string;
+  dataTypeName: string;
+  valueKey: "intVal" | "fpVal";
+  start: number;
+  end: number;
+  tzOffsetMinutes: number;
+}): Promise<Map<string, number>> {
+  const url = new URL("https://www.googleapis.com/fitness/v1/users/me/dataSources");
+  url.searchParams.set("dataTypeName", params.dataTypeName);
+
+  const sourceList = await fitnessGetJson(params.accessToken, url.toString()) as { dataSource?: Array<{ dataStreamId?: string }> };
+  const sourceIds = (sourceList.dataSource ?? [])
+    .map((source) => source.dataStreamId)
+    .filter((id): id is string => Boolean(id));
+
+  const startNs = BigInt(params.start) * 1_000_000n;
+  const endNs = BigInt(params.end) * 1_000_000n;
+  const datasetId = `${startNs}-${endNs}`;
+
+  const perSource = await Promise.all(sourceIds.map(async (sourceId) => {
+    try {
+      const datasetUrl = `https://www.googleapis.com/fitness/v1/users/me/dataSources/${encodeURIComponent(sourceId)}/datasets/${datasetId}`;
+      const data = await fitnessGetJson(params.accessToken, datasetUrl) as { point?: any[] };
+      const byDate = new Map<string, number>();
+      for (const point of data.point ?? []) {
+        const pointMs = nanosToMs(point.startTimeNanos) ?? nanosToMs(point.endTimeNanos);
+        if (pointMs == null) continue;
+        const date = localDateLabel(pointMs, params.tzOffsetMinutes);
+        let total = byDate.get(date) ?? 0;
+        for (const value of point.value ?? []) {
+          const val = value[params.valueKey];
+          if (typeof val === "number") total += val;
+        }
+        byDate.set(date, total);
+      }
+      return byDate;
+    } catch (err) {
+      console.warn(`[google-fit] raw data source failed for ${params.dataTypeName}:`, sourceId, err);
+      return new Map<string, number>();
+    }
+  }));
+
+  const maxByDate = new Map<string, number>();
+  for (const sourceTotals of perSource) {
+    for (const [date, total] of sourceTotals) {
+      maxByDate.set(date, Math.max(maxByDate.get(date) ?? 0, total));
+    }
+  }
+  return maxByDate;
 }
 
 export async function fetchDailySummaries(params: {
@@ -314,6 +392,65 @@ export async function fetchDailySummaries(params: {
   for (const b of calAnyBuckets) ensure(b).energyKcal = Math.max(ensure(b).energyKcal, Math.round(sumBucket(b, "fpVal")));
   for (const b of distBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
   for (const b of distAnyBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
+
+  const [rawStepsByDate, rawCaloriesByDate, rawActiveMinutesByDate, rawDistanceByDate] = await Promise.all([
+    fetchRawDailyMaxBySource({
+      accessToken: params.accessToken,
+      dataTypeName: "com.google.step_count.delta",
+      valueKey: "intVal",
+      start,
+      end,
+      tzOffsetMinutes: tz,
+    }),
+    fetchRawDailyMaxBySource({
+      accessToken: params.accessToken,
+      dataTypeName: "com.google.calories.expended",
+      valueKey: "fpVal",
+      start,
+      end,
+      tzOffsetMinutes: tz,
+    }),
+    fetchRawDailyMaxBySource({
+      accessToken: params.accessToken,
+      dataTypeName: "com.google.active_minutes",
+      valueKey: "intVal",
+      start,
+      end,
+      tzOffsetMinutes: tz,
+    }),
+    fetchRawDailyMaxBySource({
+      accessToken: params.accessToken,
+      dataTypeName: "com.google.distance.delta",
+      valueKey: "fpVal",
+      start,
+      end,
+      tzOffsetMinutes: tz,
+    }),
+  ]);
+  const ensureDate = (date: string): DailyFitnessSummary => {
+    let entry = dates.get(date);
+    if (!entry) {
+      entry = { date, steps: 0, cardioPoints: 0, activeMinutes: 0, energyKcal: 0, distanceKm: 0 };
+      dates.set(date, entry);
+    }
+    return entry;
+  };
+  for (const [date, steps] of rawStepsByDate) {
+    const entry = ensureDate(date);
+    entry.steps = Math.max(entry.steps, Math.round(steps));
+  }
+  for (const [date, calories] of rawCaloriesByDate) {
+    const entry = ensureDate(date);
+    entry.energyKcal = Math.max(entry.energyKcal, Math.round(calories));
+  }
+  for (const [date, minutes] of rawActiveMinutesByDate) {
+    const entry = ensureDate(date);
+    entry.activeMinutes = Math.max(entry.activeMinutes, Math.round(minutes));
+  }
+  for (const [date, meters] of rawDistanceByDate) {
+    const entry = ensureDate(date);
+    entry.distanceKm = Math.max(entry.distanceKm, Number((meters / 1000).toFixed(2)));
+  }
 
   return Array.from(dates.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
