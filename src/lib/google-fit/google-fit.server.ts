@@ -393,6 +393,41 @@ export async function fetchDailySummaries(params: {
   for (const b of distBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
   for (const b of distAnyBuckets) ensure(b).distanceKm = Math.max(ensure(b).distanceKm, Number((sumBucket(b, "fpVal") / 1000).toFixed(2)));
 
+  const [rawStepsByDate, rawCaloriesByDate] = await Promise.all([
+    fetchRawDailyMaxBySource({
+      accessToken: params.accessToken,
+      dataTypeName: "com.google.step_count.delta",
+      valueKey: "intVal",
+      start,
+      end,
+      tzOffsetMinutes: tz,
+    }),
+    fetchRawDailyMaxBySource({
+      accessToken: params.accessToken,
+      dataTypeName: "com.google.calories.expended",
+      valueKey: "fpVal",
+      start,
+      end,
+      tzOffsetMinutes: tz,
+    }),
+  ]);
+  const ensureDate = (date: string): DailyFitnessSummary => {
+    let entry = dates.get(date);
+    if (!entry) {
+      entry = { date, steps: 0, cardioPoints: 0, activeMinutes: 0, energyKcal: 0, distanceKm: 0 };
+      dates.set(date, entry);
+    }
+    return entry;
+  };
+  for (const [date, steps] of rawStepsByDate) {
+    const entry = ensureDate(date);
+    entry.steps = Math.max(entry.steps, Math.round(steps));
+  }
+  for (const [date, calories] of rawCaloriesByDate) {
+    const entry = ensureDate(date);
+    entry.energyKcal = Math.max(entry.energyKcal, Math.round(calories));
+  }
+
   return Array.from(dates.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
