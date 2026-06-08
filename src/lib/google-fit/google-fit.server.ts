@@ -247,10 +247,18 @@ async function fetchRawDailyMaxBySource(params: {
   const url = new URL("https://www.googleapis.com/fitness/v1/users/me/dataSources");
   url.searchParams.set("dataTypeName", params.dataTypeName);
 
-  const sourceList = await fitnessGetJson(params.accessToken, url.toString()) as { dataSource?: Array<{ dataStreamId?: string }> };
+  let sourceList: { dataSource?: Array<{ dataStreamId?: string }> };
+  try {
+    sourceList = await fitnessGetJson(params.accessToken, url.toString()) as { dataSource?: Array<{ dataStreamId?: string }> };
+  } catch (err) {
+    console.warn(`[google-fit] raw data source list failed for ${params.dataTypeName}:`, err);
+    return new Map<string, number>();
+  }
   const sourceIds = (sourceList.dataSource ?? [])
     .map((source) => source.dataStreamId)
     .filter((id): id is string => Boolean(id));
+
+  if (sourceIds.length === 0) return new Map<string, number>();
 
   const startNs = BigInt(params.start) * 1_000_000n;
   const endNs = BigInt(params.end) * 1_000_000n;
