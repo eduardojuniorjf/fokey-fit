@@ -110,12 +110,19 @@ export const syncGoogleFit = createServerFn({ method: "POST" })
         .eq("id", integ.id);
     }
 
-    // Fetch last 7 days of activity + 30 days of weight + sessions, aligned to user's local timezone
-    const [daily, weights, sessions] = await Promise.all([
+    // Fetch last 7 days of activity + 30 days of weight + sessions, aligned to user's local timezone.
+    // Activity is the primary dashboard feed, so optional Google Fit endpoints must not abort the whole sync.
+    const [dailyResult, weightsResult, sessionsResult] = await Promise.allSettled([
       fetchDailySummaries({ accessToken, days: 7, tzOffsetMinutes }),
       fetchWeightSamples({ accessToken, days: 30, tzOffsetMinutes }),
       fetchSessions({ accessToken, days: 7, tzOffsetMinutes }),
     ]);
+    const daily = dailyResult.status === "fulfilled" ? dailyResult.value : [];
+    const weights = weightsResult.status === "fulfilled" ? weightsResult.value : [];
+    const sessions = sessionsResult.status === "fulfilled" ? sessionsResult.value : [];
+    if (dailyResult.status === "rejected") console.warn("[google-fit] daily sync failed:", dailyResult.reason);
+    if (weightsResult.status === "rejected") console.warn("[google-fit] weight sync failed:", weightsResult.reason);
+    if (sessionsResult.status === "rejected") console.warn("[google-fit] session sync failed:", sessionsResult.reason);
 
 
     const sessionTotalsByDate = new Map<
